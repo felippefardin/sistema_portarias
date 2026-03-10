@@ -197,6 +197,10 @@ if(isset($_GET['msg'])){
     <aside class="sidebar">
         <h2>Nova Portaria</h2>
         <form method="post">
+            <button type="button" class="btn-save" style="background:#2980b9; margin-top: 10px;" onclick="window.location='gerar_zip.php'">
+    📦 Baixar Todas (ZIP)
+</button>
+
             <label>Nº Portaria (Opcional)</label>
             <input type="number" name="numero" placeholder="Automático se vazio">
 
@@ -276,7 +280,8 @@ if(isset($_GET['msg'])){
 <div id="modalExcluir" class="modal">
     <div class="modal-content">
         <h3>Confirmar</h3>
-        <p>Deseja apagar os registros selecionados?</p>
+        <p style="color: #dc3545; font-weight: bold;">A EXCLUSÃO É PERMANENTE E NÃO DÁ PRA RECUPERAR</p>
+        <p>Deseja realmente apagar?</p>
         <button class="btn-save" style="background:#dc3545" onclick="confirmarExclusao()">Sim, Apagar</button>
         <button class="table-btn" onclick="fecharModal()">Cancelar</button>
     </div>
