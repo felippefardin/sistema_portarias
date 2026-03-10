@@ -15,18 +15,6 @@ if(!$portaria){
     exit;
 }
 
-function dataExtenso($data){
-    $meses = [
-        "01"=>"janeiro","02"=>"fevereiro","03"=>"março","04"=>"abril",
-        "05"=>"maio","06"=>"junho","07"=>"julho","08"=>"agosto",
-        "09"=>"setembro","10"=>"outubro","11"=>"novembro","12"=>"dezembro"
-    ];
-    $d = date("d",strtotime($data));
-    $m = $meses[date("m",strtotime($data))];
-    $a = date("Y",strtotime($data));
-    return "$d de $m de $a";
-}
-
 // Salvar alterações
 if(isset($_POST['salvar'])){
     $numero = intval($_POST['numero']);
@@ -50,60 +38,162 @@ if(isset($_POST['salvar'])){
         WHERE id=$id
     ");
 
-    // Redireciona para index.php com mensagem de sucesso
     header("Location:index.php?msg=editado");
     exit;
 }
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Editar Portaria</title>
-<style>
-body { font-family:'Segoe UI', Tahoma, Geneva, Verdana,sans-serif; background:#f4f6f8; margin:0; padding:0; }
-.container { max-width:600px; margin:40px auto; background:#fff; padding:30px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.1); }
-h2 { color:#333; margin-bottom:20px; border-bottom:2px solid #4CAF50; padding-bottom:8px; }
-form input, form select, form button { width:100%; max-width:300px; padding:8px 12px; margin:6px 0; border-radius:5px; border:1px solid #ccc; box-sizing:border-box; }
-form button { background-color:#4CAF50; color:white; border:none; cursor:pointer; width:auto; padding:10px 20px; transition:0.3s; }
-form button:hover { background-color:#45a049; }
-</style>
+    <meta charset="UTF-8">
+    <title>Editar Portaria nº <?php echo $portaria['numero']; ?></title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #4CAF50;
+            --bg-body: #f0f2f5;
+            --bg-card: #ffffff;
+            --text-main: #333;
+            --border-radius: 8px;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg-body); 
+            margin: 0; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: var(--text-main);
+        }
+
+        .container { 
+            width: 100%;
+            max-width: 500px; /* Largura métrica para formulários de edição */
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            box-sizing: border-box;
+        }
+
+        .header-edit {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 15px;
+        }
+
+        h2 { 
+            color: var(--primary-color); 
+            margin: 0;
+            font-size: 1.5rem;
+            border-left: 5px solid var(--secondary-color);
+            padding-left: 15px;
+        }
+
+        form label { 
+            display: block; 
+            font-weight: 600; 
+            margin: 15px 0 5px 0; 
+            font-size: 0.9em; 
+            color: #555; 
+        }
+
+        form input, form select { 
+            width: 100%; 
+            padding: 12px; 
+            border-radius: 5px; 
+            border: 1px solid #ddd; 
+            box-sizing: border-box;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        form input:focus, form select:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .btn-save { 
+            flex: 2;
+            background: var(--secondary-color); 
+            color: white; 
+            border: none; 
+            padding: 14px; 
+            border-radius: 5px;
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.3s;
+        }
+
+        .btn-save:hover { background: #45a049; }
+
+        .btn-back { 
+            flex: 1;
+            background: #eee; 
+            color: var(--primary-color); 
+            text-decoration: none;
+            text-align: center;
+            padding: 14px; 
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+            transition: 0.3s;
+        }
+
+        .btn-back:hover { background: #ddd; }
+    </style>
 </head>
 <body>
 
 <div class="container">
-<h2>Editar Portaria nº <?php echo $portaria['numero']; ?></h2>
-<form method="post">
-Número da Portaria
-<input type="number" name="numero" value="<?php echo $portaria['numero']; ?>" required>
+    <div class="header-edit">
+        <h2>Editar Portaria nº <?php echo $portaria['numero']; ?></h2>
+    </div>
 
-Procurador
-<input type="text" name="procurador" value="<?php echo $portaria['procurador']; ?>" required>
+    <form method="post">
+        <label>Número da Portaria</label>
+        <input type="number" name="numero" value="<?php echo $portaria['numero']; ?>" required>
 
-Sexo
-<select name="sexo" required>
-<option value="M" <?php if($portaria['sexo']=="M") echo "selected"; ?>>Masculino</option>
-<option value="F" <?php if($portaria['sexo']=="F") echo "selected"; ?>>Feminino</option>
-</select>
+        <label>Procurador(a)</label>
+        <input type="text" name="procurador" value="<?php echo $portaria['procurador']; ?>" required>
 
-OAB
-<input type="text" name="oab" value="<?php echo $portaria['oab']; ?>" required>
+        <label>Sexo</label>
+        <select name="sexo" required>
+            <option value="M" <?php if($portaria['sexo']=="M") echo "selected"; ?>>Masculino</option>
+            <option value="F" <?php if($portaria['sexo']=="F") echo "selected"; ?>>Feminino</option>
+        </select>
 
-Processo
-<input type="text" name="processo" value="<?php echo $portaria['processo']; ?>" required>
+        <label>OAB</label>
+        <input type="text" name="oab" value="<?php echo $portaria['oab']; ?>" required>
 
-Autor
-<input type="text" name="autor" value="<?php echo $portaria['autor']; ?>" required>
+        <label>Processo</label>
+        <input type="text" name="processo" value="<?php echo $portaria['processo']; ?>" required>
 
-Vara
-<input type="text" name="vara" value="<?php echo $portaria['vara']; ?>" required>
+        <label>Autor</label>
+        <input type="text" name="autor" value="<?php echo $portaria['autor']; ?>" required>
 
-Data
-<input type="date" name="data" value="<?php echo $portaria['data_portaria']; ?>" required>
+        <label>Vara</label>
+        <input type="text" name="vara" value="<?php echo $portaria['vara']; ?>" required>
 
-<button type="submit" name="salvar">Salvar Alterações</button>
-</form>
+        <label>Data</label>
+        <input type="date" name="data" value="<?php echo $portaria['data_portaria']; ?>" required>
+
+        <div class="btn-group">
+            <a href="index.php" class="btn-back">Cancelar</a>
+            <button type="submit" name="salvar" class="btn-save">Salvar Alterações</button>
+        </div>
+    </form>
 </div>
 
 </body>

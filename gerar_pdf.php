@@ -89,19 +89,22 @@ $texto="Designar o Procurador Municipal, $titulo $procurador, $descricao, para p
 $pdf->MultiCell(0,8,utf8_decode($texto));
 
 $pdf->Ln(15);
-$pdf->Cell(0,10,utf8_decode("Serra/ES, $data."),0,1);
+// Alterado para 'C' para centralizar a data no meio da folha
+$pdf->Cell(0, 10, utf8_decode("Serra/ES, $data."), 0, 1, 'C'); 
 
-$pdf->Ln(20);
-$pdf->SetFont('Arial','B',12);
-$pdf->Cell(0,8,utf8_decode("ALESSANDRA COSTA FERREIRA NUNES"),0,1,'C');
-$pdf->SetFont('Arial','',12);
-$pdf->Cell(0,8,utf8_decode("Procuradora-Geral do Município de Serra"),0,1,'C');
+// Aumentado o espaço (Ln) de 20 para 40 para um distanciamento maior até a assinatura
+$pdf->Ln(40); 
+
+$pdf->SetFont('Arial', 'B', 12);
+$pdf->Cell(0, 8, utf8_decode("ALESSANDRA COSTA FERREIRA NUNES"), 0, 1, 'C');
+$pdf->SetFont('Arial', '', 12);
+$pdf->Cell(0, 8, utf8_decode("Procuradora-Geral do Município de Serra"), 0, 1, 'C');
 
 // Forçar download ou abrir no navegador
 if(isset($_GET['download'])){
-    $pdf->Output('D','Portaria_'.$numero.'_'.$ano.'.pdf'); // download automático
-}else{
-    $pdf->Output('I'); // abre no navegador
+    $pdf->Output('D', 'Portaria_'.$numero.'_'.$ano.'.pdf'); 
+} else {
+    $pdf->Output('I'); 
 }
 
 ?>
