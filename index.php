@@ -52,18 +52,6 @@ if(isset($_POST['salvar'])){
     exit;
 }
 
-// LOGICA DASHBOARD
-$anoFiltroStat = date("Y");
-$totalAno = $db->querySingle("SELECT COUNT(*) FROM portarias WHERE ano = '$anoFiltroStat'");
-$maisDesignado = $db->querySingle("SELECT procurador FROM portarias GROUP BY procurador ORDER BY COUNT(*) DESC LIMIT 1") ?: "Nenhum";
-
-$mesesGrafico = [];
-for($i=1; $i<=12; $i++){
-    $m = str_pad($i, 2, "0", STR_PAD_LEFT);
-    $qtd = $db->querySingle("SELECT COUNT(*) FROM portarias WHERE strftime('%m', data_portaria) = '$m' AND ano = '$anoFiltroStat'");
-    $mesesGrafico[] = $qtd;
-}
-
 // LOGICA FILTROS
 $filtro="WHERE 1=1";
 if(!empty($_GET['buscar'])){
@@ -84,6 +72,14 @@ if(isset($_GET['msg'])){
     if($_GET['msg'] == 'excluido') $mensagem = "Portaria excluída com sucesso!";
     if($_GET['msg'] == 'editado') $mensagem = "Portaria salva com sucesso!";
 }
+
+// BUSCA DE DADOS PARA PREENCHIMENTO AUTOMÁTICO (DATALISTS)
+$lista_procuradores = $db->query("SELECT DISTINCT procurador FROM portarias ORDER BY procurador ASC");
+$lista_oab = $db->query("SELECT DISTINCT oab FROM portarias ORDER BY oab ASC");
+$lista_processos = $db->query("SELECT DISTINCT processo FROM portarias ORDER BY processo ASC");
+$lista_autores = $db->query("SELECT DISTINCT autor FROM portarias ORDER BY autor ASC");
+$lista_varas = $db->query("SELECT DISTINCT vara FROM portarias ORDER BY vara ASC");
+
 ?>
 
 <!DOCTYPE html>
@@ -123,7 +119,7 @@ transition:0.3s;
 .container{
 display:grid;
 grid-template-columns:350px 1fr;
-grid-template-rows:auto auto 1fr;
+grid-template-rows:auto 1fr;
 gap:20px;
 padding:20px;
 min-height:100vh;
@@ -142,14 +138,6 @@ box-shadow:var(--shadow);
 }
 
 .header-actions img{height:50px;}
-
-/* DASHBOARD */
-.dashboard { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-.stat-card { background: var(--bg-card); padding: 20px; border-radius: var(--border-radius); box-shadow: var(--shadow); border-top: 4px solid var(--secondary-color); }
-.stat-card h3 { margin: 0; font-size: 0.85em; opacity: 0.7; text-transform: uppercase; }
-.stat-card p { margin: 10px 0 0; font-size: 1.4em; font-weight: bold; }
-.chart-container { height: 50px; display: flex; align-items: flex-end; gap: 3px; margin-top: 10px; }
-.chart-bar { background: var(--secondary-color); flex: 1; border-radius: 2px 2px 0 0; min-height: 2px; }
 
 .dark-toggle{ cursor:pointer; background:var(--primary-color); color:white; border:none; padding:8px 12px; border-radius:6px; font-size:14px; }
 
@@ -175,7 +163,6 @@ tr:hover{ background:rgba(0,0,0,0.02); }
 .table-btn.cancel{ color:#dc3545; border-color:#ffc9c9; }
 .btn-tutorial{ background:var(--accent-color); color:white; padding:10px 20px; border-radius:8px; text-decoration:none; font-weight:bold; font-size:0.9em; }
 
-/* MODAL MODERNO */
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 2000; transition: 0.3s; }
 .modal.show { display: flex; }
 .modal-content { background:var(--bg-card); padding:35px; border-radius:15px; text-align:center; width:90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); transform: scale(0.8); transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
@@ -187,8 +174,8 @@ tr:hover{ background:rgba(0,0,0,0.02); }
 <body>
 
 <?php if($mensagem): ?>
-<div id="toast" class="toast show"><?php echo $mensagem; ?></div>
-<script>setTimeout(()=>{document.getElementById('toast').classList.remove('show');},3000);</script>
+<div id="toast" class="toast show" style="visibility:visible; position:fixed; top:20px; right:20px; background:var(--secondary-color); color:white; padding:15px; border-radius:5px; z-index:3000;"><?php echo $mensagem; ?></div>
+<script>setTimeout(()=>{document.getElementById('toast').style.display='none';},3000);</script>
 <?php endif; ?>
 
 <?php if(isset($_GET['download_id'])): ?>
@@ -211,58 +198,44 @@ window.addEventListener("load", function(){
     </div>
 </header>
 
-<section class="dashboard">
-    <div class="stat-card">
-        <h3>Total em <?php echo $anoFiltroStat; ?></h3>
-        <p><?php echo $totalAno; ?></p>
-    </div>
-    <div class="stat-card">
-        <h3>Mais Designado</h3>
-        <p style="font-size: 1.1em;"><?php echo $maisDesignado; ?></p>
-    </div>
-    <div class="stat-card">
-        <h3>Fluxo Mensal</h3>
-        <div class="chart-container">
-            <?php 
-            $max = max($mesesGrafico) ?: 1;
-            foreach($mesesGrafico as $mQtd) {
-                $height = ($mQtd / $max) * 100;
-                echo "<div class='chart-bar' style='height: $height%' title='$mQtd portarias'></div>";
-            }
-            ?>
-        </div>
-    </div>
-</section>
-
 <aside class="sidebar">
     <h2>Nova Portaria</h2>
     <form method="post">
-        <label>Procurador(a)</label>
-        <input type="text" name="procurador" list="lista_procuradores" required>
-        <datalist id="lista_procuradores">
-            <?php 
-            $resP = $db->query("SELECT DISTINCT procurador FROM portarias");
-            while($p = $resP->fetchArray()) echo "<option value='{$p['procurador']}'>";
-            ?>
-        </datalist>
-
         <label>Nº Portaria (Opcional)</label>
         <input type="number" name="numero" placeholder="Automático se vazio">
+
+        <label>Procurador(a)</label>
+        <input type="text" name="procurador" list="datalist_procurador" required autocomplete="off">
+        <datalist id="datalist_procurador">
+            <?php while($row = $lista_procuradores->fetchArray()) echo "<option value='".htmlspecialchars($row['procurador'])."'>"; ?>
+        </datalist>      
         
         <label>Sexo</label>
         <select name="sexo" required><option value="M">Masculino</option><option value="F">Feminino</option></select>
         
         <label>OAB</label>
-        <input type="text" name="oab" required>
+        <input type="text" name="oab" list="datalist_oab" required autocomplete="off">
+        <datalist id="datalist_oab">
+            <?php while($row = $lista_oab->fetchArray()) echo "<option value='".htmlspecialchars($row['oab'])."'>"; ?>
+        </datalist>
         
         <label>Processo</label>
-        <input type="text" name="processo" required>
+        <input type="text" name="processo" list="datalist_processo" required autocomplete="off">
+        <datalist id="datalist_processo">
+            <?php while($row = $lista_processos->fetchArray()) echo "<option value='".htmlspecialchars($row['processo'])."'>"; ?>
+        </datalist>
         
         <label>Autor</label>
-        <input type="text" name="autor" required>
+        <input type="text" name="autor" list="datalist_autor" required autocomplete="off">
+        <datalist id="datalist_autor">
+            <?php while($row = $lista_autores->fetchArray()) echo "<option value='".htmlspecialchars($row['autor'])."'>"; ?>
+        </datalist>
         
         <label>Vara</label>
-        <input type="text" name="vara" required>
+        <input type="text" name="vara" list="datalist_vara" required autocomplete="off">
+        <datalist id="datalist_vara">
+            <?php while($row = $lista_varas->fetchArray()) echo "<option value='".htmlspecialchars($row['vara'])."'>"; ?>
+        </datalist>
         
         <label>Data</label>
         <input type="date" name="data" required>
@@ -279,8 +252,9 @@ window.addEventListener("load", function(){
         <select name="filtro_procurador">
             <option value="">Todos Procuradores</option>
             <?php 
-            $resP = $db->query("SELECT DISTINCT procurador FROM portarias");
-            while($p = $resP->fetchArray()){
+            // Reiniciar o ponteiro para o filtro
+            $lista_procuradores_filtro = $db->query("SELECT DISTINCT procurador FROM portarias ORDER BY procurador ASC");
+            while($p = $lista_procuradores_filtro->fetchArray()){
                 $sel = (isset($_GET['filtro_procurador']) && $_GET['filtro_procurador'] == $p['procurador']) ? 'selected' : '';
                 echo "<option value='{$p['procurador']}' $sel>{$p['procurador']}</option>";
             }
