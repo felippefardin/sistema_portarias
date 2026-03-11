@@ -1,0 +1,13 @@
+# Banco de Dados (Ignorar o ficheiro de dados real para evitar sobrescrever em diferentes ambientes)
+felippefardin/sistema_portarias/sistema_portarias-ef4d01f2c5ccbc1fd7ac7cfb215afda58db0a0b2/data/*.db
+felippefardin/sistema_portarias/sistema_portarias-ef4d01f2c5ccbc1fd7ac7cfb215afda58db0a0b2/data/*.json
+felippefardin/sistema_portarias/sistema_portarias-ef4d01f2c5ccbc1fd7ac7cfb215afda58db0a0b2/data/contador.txt
+
+# Logs e ficheiros temporários
+*.log
+.DS_Store
+Thumbs.db
+
+# Ficheiros de configuração de IDEs (opcional)
+.vscode/
+.idea/
