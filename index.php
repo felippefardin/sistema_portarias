@@ -54,6 +54,7 @@ if(isset($_POST['salvar'])){
 
     $novoId = $db->lastInsertRowID();
 
+    // Redireciona com o parâmetro de download na URL
     header("Location: index.php?msg=editado&download_id=" . $novoId);
     exit;
 }
@@ -78,7 +79,6 @@ if(isset($_GET['msg'])){
 <title>Sistema de Portarias - Desktop</title>
 
 <style>
-
 :root{
 --primary-color:#2c3e50;
 --secondary-color:#4CAF50;
@@ -90,7 +90,6 @@ if(isset($_GET['msg'])){
 --shadow:0 4px 12px rgba(0,0,0,0.08);
 }
 
-/* DARK MODE */
 body.dark-mode{
 --bg-body:#121212;
 --bg-card:#1e1e1e;
@@ -306,7 +305,6 @@ border-radius:10px;
 text-align:center;
 width:350px;
 }
-
 </style>
 </head>
 
@@ -323,32 +321,36 @@ setTimeout(()=>{toast.classList.remove('show');},3000);
 
 <?php if(isset($_GET['download_id'])): ?>
 <script>
-window.onload=function(){
-if(localStorage.getItem("darkmode")==="true"){
-document.body.classList.add("dark-mode");
-}
-};
+window.addEventListener("load", function(){
+
+const id="<?php echo intval($_GET['download_id']); ?>";
+
+const link = document.createElement('a');
+link.href = 'gerar_pdf.php?id=' + id + '&download=1';
+link.download = '';
+
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+
+window.history.replaceState({}, document.title, "index.php?msg=editado");
+
+});
 </script>
 <?php endif; ?>
 
 <div class="container">
-
 <header class="header-actions">
-
 <img src="img/logoserra.png">
-
 <div style="display:flex;gap:10px;align-items:center;">
 <a href="tutorial.php" class="btn-tutorial">Tutorial do Sistema</a>
 <button class="dark-toggle" onclick="toggleDarkMode()">🌙</button>
 </div>
-
 </header>
 
 <aside class="sidebar">
 <h2>Nova Portaria</h2>
-
 <form method="post">
-
 <label>Nº Portaria (Opcional)</label>
 <input type="number" name="numero" placeholder="Automático se vazio">
 
@@ -377,20 +379,14 @@ document.body.classList.add("dark-mode");
 <input type="date" name="data" required>
 
 <button type="submit" name="salvar" class="btn-save">Gerar e Salvar</button>
-
 </form>
 </aside>
 
 <main class="main-content">
-
 <h2>Histórico de Portarias</h2>
-
 <form id="formExcluirVarias" method="post">
-
 <div style="overflow-x:auto;">
-
 <table>
-
 <thead>
 <tr>
 <th><input type="checkbox" onclick="marcarTodos(this)"></th>
@@ -401,9 +397,7 @@ document.body.classList.add("dark-mode");
 <th>Ações</th>
 </tr>
 </thead>
-
 <tbody>
-
 <?php
 $res=$db->query("SELECT * FROM portarias $filtro ORDER BY id DESC");
 while($row=$res->fetchArray()){
@@ -423,18 +417,12 @@ echo "<td>
 echo "</tr>";
 }
 ?>
-
 </tbody>
 </table>
-
 </div>
-
 <br>
-
 <button type="button" class="table-btn cancel" onclick="abrirModalMultiplo()">Apagar Selecionados</button>
-
 </form>
-
 </main>
 </div>
 
@@ -448,7 +436,6 @@ echo "</tr>";
 </div>
 
 <script>
-
 let idExcluir=null;
 let excluirMultiplo=false;
 
@@ -483,20 +470,18 @@ const checkboxes=document.querySelectorAll('input[name="selecionados[]"]');
 checkboxes.forEach(cb=>cb.checked=source.checked);
 }
 
-/* DARK MODE */
-
 function toggleDarkMode(){
 document.body.classList.toggle("dark-mode");
 localStorage.setItem("darkmode",document.body.classList.contains("dark-mode"));
 }
 
-window.onload=function(){
+window.addEventListener("load", function(){
+
 if(localStorage.getItem("darkmode")==="true"){
 document.body.classList.add("dark-mode");
 }
-};
 
+});
 </script>
-
 </body>
 </html>
