@@ -1,5 +1,5 @@
 <?php
-// Desativa a exibição de erros para não corromper o PDF caso existam warnings
+
 error_reporting(0);
 ini_set('display_errors', 0);
 
@@ -21,7 +21,7 @@ function dataExtenso($data){
     return "$d de $m de $a";
 }
 
-// Verifica se o ID foi passado
+
 if(!isset($_GET['id'])){
     die("ID da portaria não fornecido.");
 }
@@ -57,15 +57,13 @@ class PDF extends FPDF{
         $largura = 30;
         $altura = 30;
         $x = (210 - $largura)/2;
-        $y = 10;
-        // Verifica se a imagem existe antes de tentar carregar para evitar erro Fatal
+        $y = 10;      
         if(file_exists('img/logoserra.png')){
             $this->Image('img/logoserra.png', $x, $y, $largura, $altura);
         }
     }
 }
 
-// Limpa qualquer saída anterior (espaços em branco, ecos) para não corromper o PDF
 ob_end_clean();
 
 $pdf = new PDF();

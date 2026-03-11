@@ -149,8 +149,19 @@ h2{ color:var(--primary-color); margin: 0 0 20px 0; font-size: 1.4rem; border-le
 form label{ display:block; font-weight:600; margin:10px 0 5px 0; font-size:0.85em; color:#777; }
 form input, form select{ width:100%; padding:10px; margin-bottom:5px; border-radius:5px; border:1px solid #ddd; box-sizing:border-box; background: var(--bg-card); color: var(--text-main); }
 
-.filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-.filter-bar input, .filter-bar select { width: auto; flex-grow: 1; }
+.filter-bar { 
+    display: flex; 
+    gap: 10px; 
+    margin-bottom: 20px; 
+    align-items: center; 
+    flex-wrap: nowrap; 
+}
+
+.filter-bar input, .filter-bar select { 
+    flex: 1; 
+    margin-bottom: 0; 
+    min-width: 150px; 
+}
 .filter-bar button { padding: 10px 20px; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer; }
 
 table{ width:100%; border-collapse:collapse; margin-top:10px; }
