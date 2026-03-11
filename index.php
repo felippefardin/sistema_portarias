@@ -229,14 +229,87 @@ td{ padding:12px 15px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:0.9em
 tr:hover{ background:rgba(0,0,0,0.02); }
 
 .btn-group{ display:flex; gap:5px; }
-.table-btn{ background:rgba(0,0,0,0.05); border:1px solid #ccc; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.75em; color: inherit; }
+.table-btn{ background:rgba(0,0,0,0.05); border:1px solid #ccc; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.75em; color: inherit; transition: 0.2s; }
+.table-btn:hover { filter: brightness(0.9); transform: translateY(-1px); }
 .table-btn.cancel{ color:#dc3545; border-color:#ffc9c9; }
 .btn-tutorial{ background:var(--accent-color); color:white; padding:10px 20px; border-radius:8px; text-decoration:none; font-weight:bold; font-size:0.9em; }
 
-.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 2000; transition: 0.3s; }
-.modal.show { display: flex; }
-.modal-content { background:var(--bg-card); padding:35px; border-radius:15px; text-align:center; width:90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); transform: scale(0.8); transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.modal.show .modal-content { transform: scale(1); }
+/* MODAL MODERNO */
+.modal { 
+    display: none; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0, 0, 0, 0.4); 
+    backdrop-filter: blur(8px); 
+    -webkit-backdrop-filter: blur(8px);
+    align-items: center; 
+    justify-content: center; 
+    z-index: 2000; 
+}
+
+.modal.show { display: flex; animation: fadeIn 0.3s ease; }
+
+.modal-content { 
+    background: var(--bg-card); 
+    padding: 40px; 
+    border-radius: 20px; 
+    text-align: center; 
+    width: 90%; 
+    max-width: 380px; 
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+    border: 1px solid rgba(255,255,255,0.1);
+    transform: translateY(20px);
+    transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal.show .modal-content { transform: translateY(0); }
+
+.modal-icon {
+    width: 80px;
+    height: 80px;
+    background: #fff5f5;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    color: #dc3545;
+    font-size: 40px;
+    animation: pulseError 2s infinite;
+}
+
+body.dark-mode .modal-icon { background: #3d1a1a; }
+
+.modal h3 { margin: 10px 0; font-size: 1.5rem; color: var(--text-main); }
+.modal p { color: #666; margin-bottom: 30px; line-height: 1.5; }
+body.dark-mode .modal p { color: #aaa; }
+
+.modal-footer { display: flex; gap: 12px; }
+
+.btn-modal {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-cancelar { background: #e2e8f0; color: #475569; }
+.btn-cancelar:hover { background: #cbd5e1; }
+.btn-confirmar { background: #dc3545; color: white; box-shadow: 0 4px 14px 0 rgba(220, 53, 69, 0.39); }
+.btn-confirmar:hover { background: #c82333; transform: scale(1.02); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulseError { 
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
 
 </style>
 </head>
@@ -378,12 +451,12 @@ window.addEventListener("load", function(){
 
 <div id="modalExcluir" class="modal">
     <div class="modal-content">
-        <div style="font-size: 50px; color: #dc3545;">⚠️</div>
-        <h3>Confirmar Exclusão</h3>
-        <p>Os itens deletados não podem mais ser recuperados.</p>
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button class="table-btn" onclick="fecharModal()" style="flex: 1;">Cancelar</button>
-            <button class="btn-save" style="background:#dc3545; margin:0; flex: 1;" onclick="confirmarExclusao()">Apagar</button>
+        <div class="modal-icon">✕</div>
+        <h3>Você tem certeza?</h3>
+        <p>Esta ação não pode ser desfeita. Todos os dados selecionados serão removidos permanentemente.</p>
+        <div class="modal-footer">
+            <button class="btn-modal btn-cancelar" onclick="fecharModal()">Cancelar</button>
+            <button class="btn-modal btn-confirmar" onclick="confirmarExclusao()">Sim, Apagar</button>
         </div>
     </div>
 </div>
@@ -471,6 +544,14 @@ function baixarVarios() {
 }
 
 window.onload = () => { 
+    if(localStorage.getItem("darkmode")==="true") {
+        document.body.classList.add("dark-mode");
+    }
+    if (window.location.search.includes("msg=")) {
+        const novaUrl = window.location.pathname + window.location.search.replace(/[?&]msg=[^&]+/, "").replace(/^&/, "?");
+        window.history.replaceState({}, document.title, novaUrl);
+    }
+    
     if(localStorage.getItem("darkmode")==="true") {
         document.body.classList.add("dark-mode");
     }
