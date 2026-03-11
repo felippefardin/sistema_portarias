@@ -324,8 +324,9 @@ setTimeout(()=>{toast.classList.remove('show');},3000);
 <?php if(isset($_GET['download_id'])): ?>
 <script>
 window.onload=function(){
-const id="<?php echo intval($_GET['download_id']); ?>";
-window.location.href='gerar_pdf.php?id='+id+'&download=1';
+if(localStorage.getItem("darkmode")==="true"){
+document.body.classList.add("dark-mode");
+}
 };
 </script>
 <?php endif; ?>
