@@ -54,15 +54,36 @@ if(isset($_POST['salvar'])){
 
     $novoId = $db->lastInsertRowID();
 
-    // Redireciona com o parâmetro de download na URL
     header("Location: index.php?msg=editado&download_id=" . $novoId);
     exit;
 }
 
-$filtro="";
-if(isset($_GET['buscar'])){
+// LOGICA DASHBOARD
+$anoFiltroStat = date("Y");
+$totalAno = $db->querySingle("SELECT COUNT(*) FROM portarias WHERE ano = '$anoFiltroStat'");
+$maisDesignado = $db->querySingle("SELECT procurador FROM portarias GROUP BY procurador ORDER BY COUNT(*) DESC LIMIT 1") ?: "Nenhum";
+
+// Dados do Gráfico
+$mesesGrafico = [];
+for($i=1; $i<=12; $i++){
+    $m = str_pad($i, 2, "0", STR_PAD_LEFT);
+    $qtd = $db->querySingle("SELECT COUNT(*) FROM portarias WHERE strftime('%m', data_portaria) = '$m' AND ano = '$anoFiltroStat'");
+    $mesesGrafico[] = $qtd;
+}
+
+// LOGICA FILTROS AVANÇADOS
+$filtro="WHERE 1=1";
+if(!empty($_GET['buscar'])){
     $busca=$_GET['buscar'];
-    $filtro="WHERE processo LIKE '%$busca%' OR procurador LIKE '%$busca%' OR autor LIKE '%$busca%'";
+    $filtro .= " AND (processo LIKE '%$busca%' OR procurador LIKE '%$busca%' OR autor LIKE '%$busca%')";
+}
+if(!empty($_GET['filtro_ano'])){
+    $fAno = intval($_GET['filtro_ano']);
+    $filtro .= " AND ano = $fAno";
+}
+if(!empty($_GET['filtro_procurador'])){
+    $fProc = $_GET['filtro_procurador'];
+    $filtro .= " AND procurador = '$fProc'";
 }
 
 $mensagem = "";
@@ -109,7 +130,7 @@ transition:0.3s;
 .container{
 display:grid;
 grid-template-columns:350px 1fr;
-grid-template-rows:auto 1fr;
+grid-template-rows:auto auto 1fr;
 gap:20px;
 padding:20px;
 min-height:100vh;
@@ -128,6 +149,26 @@ box-shadow:var(--shadow);
 }
 
 .header-actions img{height:50px;}
+
+/* DASHBOARD STYLE */
+.dashboard {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+.stat-card {
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    border-top: 4px solid var(--secondary-color);
+}
+.stat-card h3 { margin: 0; font-size: 0.85em; opacity: 0.7; text-transform: uppercase; }
+.stat-card p { margin: 10px 0 0; font-size: 1.4em; font-weight: bold; }
+
+.chart-container { height: 50px; display: flex; align-items: flex-end; gap: 3px; margin-top: 10px; }
+.chart-bar { background: var(--secondary-color); flex: 1; border-radius: 2px 2px 0 0; min-height: 2px; }
 
 .dark-toggle{
 cursor:pointer;
@@ -193,6 +234,14 @@ border-radius:5px;
 font-weight:bold;
 cursor:pointer;
 }
+
+.filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.filter-bar input, .filter-bar select { margin-bottom: 0; }
+.filter-bar button { padding: 0 20px; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer; }
 
 table{
 width:100%;
@@ -285,26 +334,50 @@ transition:0.5s;
 
 .toast.show{visibility:visible;opacity:1;}
 
-.modal{
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.5);
-align-items:center;
-justify-content:center;
-z-index:2000;
+/* Estilo Moderno do Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px); /* Efeito de vidro no fundo */
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    transition: all 0.3s;
 }
 
-.modal-content{
-background:var(--bg-card);
+.modal-content {
+   background:var(--bg-card);
 padding:30px;
 border-radius:10px;
 text-align:center;
 width:350px;
+    max-width: 400px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+    transform: scale(0.7); /* Começa menor para a animação */
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* Classe para animar a abertura */
+.modal.show .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h3{
+font-size:26px;       /* título maior */
+margin-bottom:15px;
+}
+
+.modal-content p{
+font-size:18px;
+margin-bottom:25px;
+}
+
 </style>
 </head>
 
@@ -315,26 +388,21 @@ width:350px;
 <script>
 const toast=document.getElementById('toast');
 toast.classList.add('show');
-setTimeout(()=>{toast.classList.remove('show');},3000);
+setTimeout(()=>{toast.classList.remove('show');},2000);
 </script>
 <?php endif; ?>
 
 <?php if(isset($_GET['download_id'])): ?>
 <script>
 window.addEventListener("load", function(){
-
 const id="<?php echo intval($_GET['download_id']); ?>";
-
 const link = document.createElement('a');
 link.href = 'gerar_pdf.php?id=' + id + '&download=1';
 link.download = '';
-
 document.body.appendChild(link);
 link.click();
 document.body.removeChild(link);
-
 window.history.replaceState({}, document.title, "index.php?msg=editado");
-
 });
 </script>
 <?php endif; ?>
@@ -348,6 +416,29 @@ window.history.replaceState({}, document.title, "index.php?msg=editado");
 </div>
 </header>
 
+<section class="dashboard">
+    <div class="stat-card">
+        <h3>Total de portaria em <?php echo $anoFiltroStat; ?></h3>
+        <p><?php echo $totalAno; ?></p>
+    </div>
+    <div class="stat-card">
+        <h3>Mais Designado</h3>
+        <p style="font-size: 1.1em;"><?php echo $maisDesignado; ?></p>
+    </div>
+    <div class="stat-card">
+        <h3>Fluxo Mensal (<?php echo $anoFiltroStat; ?>)</h3>
+        <div class="chart-container">
+            <?php 
+            $max = max($mesesGrafico) ?: 1;
+            foreach($mesesGrafico as $mQtd) {
+                $height = ($mQtd / $max) * 100;
+                echo "<div class='chart-bar' style='height: {$height}%' title='{$mQtd} portarias'></div>";
+            }
+            ?>
+        </div>
+    </div>
+</section>
+
 <aside class="sidebar">
 <h2>Nova Portaria</h2>
 <form method="post">
@@ -355,7 +446,13 @@ window.history.replaceState({}, document.title, "index.php?msg=editado");
 <input type="number" name="numero" placeholder="Automático se vazio">
 
 <label>Procurador(a)</label>
-<input type="text" name="procurador" required>
+<input type="text" name="procurador" list="lista_procuradores" required>
+<datalist id="lista_procuradores">
+    <?php 
+    $resP = $db->query("SELECT DISTINCT procurador FROM portarias");
+    while($p = $resP->fetchArray()) echo "<option value='{$p['procurador']}'>";
+    ?>
+</datalist>
 
 <label>Sexo</label>
 <select name="sexo" required>
@@ -384,6 +481,38 @@ window.history.replaceState({}, document.title, "index.php?msg=editado");
 
 <main class="main-content">
 <h2>Histórico de Portarias</h2>
+
+<form method="get" class="filter-bar">
+    <input type="text" name="buscar" placeholder="Busca geral..." value="<?php echo $_GET['buscar'] ?? ''; ?>">
+    
+    <select name="filtro_procurador">
+        <option value="">Todos Procuradores</option>
+        <?php 
+        $resP = $db->query("SELECT DISTINCT procurador FROM portarias");
+        while($p = $resP->fetchArray()){
+            $selected = (isset($_GET['filtro_procurador']) && $_GET['filtro_procurador'] == $p['procurador']) ? 'selected' : '';
+            echo "<option value='{$p['procurador']}' $selected>{$p['procurador']}</option>";
+        }
+        ?>
+    </select>
+
+    <select name="filtro_ano" style="width: 120px;">
+        <option value="">Todos Anos</option>
+        <?php 
+        $resA = $db->query("SELECT DISTINCT ano FROM portarias ORDER BY ano DESC");
+        while($a = $resA->fetchArray()){
+            $selected = (isset($_GET['filtro_ano']) && $_GET['filtro_ano'] == $a['ano']) ? 'selected' : '';
+            echo "<option value='{$a['ano']}' $selected>{$a['ano']}</option>";
+        }
+        ?>
+    </select>
+    
+    <button type="submit">Filtrar</button>
+    <?php if(count($_GET) > 0): ?>
+        <button type="button" onclick="window.location='index.php'" style="background:#7f8c8d">Limpar</button>
+    <?php endif; ?>
+</form>
+
 <form id="formExcluirVarias" method="post">
 <div style="overflow-x:auto;">
 <table>
@@ -421,39 +550,83 @@ echo "</tr>";
 </table>
 </div>
 <br>
-<button type="button" class="table-btn cancel" onclick="abrirModalMultiplo()">Apagar Selecionados</button>
+<div style="margin-top: 20px; display: flex; gap: 10px;">
+    <button type="button" class="table-btn cancel" onclick="abrirModalMultiplo()">Apagar Selecionados</button>
+    
+    <button type="button" class="table-btn" style="background: #2980b9; color: white; border: none;" onclick="baixarVarios()">
+        📦 Baixar Selecionados (ZIP)
+    </button>
+</div>
 </form>
 </main>
 </div>
 
 <div id="modalExcluir" class="modal">
-<div class="modal-content">
-<h3>Confirmar</h3>
-<p>Deseja apagar os registros selecionados?</p>
-<button class="btn-save" style="background:#dc3545" onclick="confirmarExclusao()">Sim, Apagar</button>
-<button class="table-btn" onclick="fecharModal()">Cancelar</button>
+    <div class="modal-content">
+        <div style="font-size: 50px; color: #dc3545; margin-bottom: 15px;">⚠️</div>
+        <h3>Confirmar Exclusão</h3>
+        <p>Você está prestes a apagar os registros selecionados.</p>
+        <p style="color: #dc3545; font-weight: bold; font-size: 0.9em; background: rgba(220, 53, 69, 0.1); padding: 10px; border-radius: 5px;">
+            Os itens deletados não podem mais ser recuperados.
+        </p>
+        
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+            <button class="table-btn" onclick="fecharModal()" style="padding: 10px 20px; flex: 1;">Cancelar</button>
+            <button class="btn-save" style="background:#dc3545; margin: 0; padding: 10px 20px; flex: 1;" onclick="confirmarExclusao()">Sim, Apagar</button>
+        </div>
+    </div>
 </div>
+<div id="modalExcluir" class="modal">
+    <div class="modal-content">
+        <div style="font-size: 50px; color: #dc3545; margin-bottom: 15px;">⚠️</div>
+        <h3>Confirmar Exclusão</h3>
+        <p>Você está prestes a apagar os registros selecionados.</p>
+        <p style="color: #dc3545; font-weight: bold; font-size: 0.9em; background: rgba(220, 53, 69, 0.1); padding: 10px; border-radius: 5px;">
+            Os itens deletados não podem mais ser recuperados.
+        </p>
+        
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+            <button class="table-btn" onclick="fecharModal()" style="padding: 10px 20px; flex: 1;">Cancelar</button>
+            <button class="btn-save" style="background:#dc3545; margin: 0; padding: 10px 20px; flex: 1;" onclick="confirmarExclusao()">Sim, Apagar</button>
+        </div>
+    </div>
 </div>
 
 <script>
 let idExcluir=null;
 let excluirMultiplo=false;
 
-function abrirModal(id){
-idExcluir=id;
-excluirMultiplo=false;
-document.getElementById("modalExcluir").style.display="flex";
+function abrirModal(id) {
+    idExcluir = id;
+    excluirMultiplo = false;
+    const modal = document.getElementById("modalExcluir");
+    modal.style.display = "flex";
+    setTimeout(() => modal.classList.add('show'), 10); // Gatilho para animação
 }
 
-function abrirModalMultiplo(){
-const cb=document.querySelectorAll('input[name="selecionados[]"]:checked');
-if(cb.length===0){alert("Selecione itens primeiro.");return;}
-excluirMultiplo=true;
-document.getElementById("modalExcluir").style.display="flex";
+function abrirModalMultiplo() {
+    const cb = document.querySelectorAll('input[name="selecionados[]"]:checked');
+    if (cb.length === 0) {
+        alert("Selecione itens primeiro.");
+        return;
+    }
+    excluirMultiplo = true;
+    const modal = document.getElementById("modalExcluir");
+    modal.style.display = "flex";
+    setTimeout(() => modal.classList.add('show'), 10);
 }
 
-function fecharModal(){
-document.getElementById("modalExcluir").style.display="none";
+function fecharModal() {
+    const modal = document.getElementById("modalExcluir");
+    modal.classList.remove('show');
+    setTimeout(() => modal.style.display = "none", 300); // Espera a animação sumir
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById("modalExcluir");
+    if (event.target == modal) {
+        fecharModal();
+    }
 }
 
 function confirmarExclusao(){
@@ -475,8 +648,21 @@ document.body.classList.toggle("dark-mode");
 localStorage.setItem("darkmode",document.body.classList.contains("dark-mode"));
 }
 
-window.addEventListener("load", function(){
+function baixarVarios() {
+    const cb = document.querySelectorAll('input[name="selecionados[]"]:checked');
+    if (cb.length === 0) {
+        alert("Selecione pelo menos uma portaria para baixar.");
+        return;
+    }
+    const form = document.getElementById("formExcluirVarias");
+    form.action = "gerar_zip.php"; // Muda o destino para o gerador de ZIP
+    form.submit();
+    
+    // Restaura o action original após o envio para não quebrar a função de apagar
+    setTimeout(() => { form.action = ""; }, 500);
+}
 
+window.addEventListener("load", function(){
 if(localStorage.getItem("darkmode")==="true"){
 document.body.classList.add("dark-mode");
 }
