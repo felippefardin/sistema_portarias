@@ -1,177 +1,212 @@
-<?php
-
-$db = new SQLite3('data/portarias.db');
-
-$db->exec("CREATE TABLE IF NOT EXISTS portarias(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-numero INTEGER,
-ano INTEGER,
-procurador TEXT,
-sexo TEXT,
-oab TEXT,
-processo TEXT,
-autor TEXT,
-vara TEXT,
-data_portaria TEXT
-)");
-
-function dataExtenso($data){
-    $meses = [
-        "01"=>"janeiro","02"=>"fevereiro","03"=>"março","04"=>"abril",
-        "05"=>"maio","06"=>"junho","07"=>"julho","08"=>"agosto",
-        "09"=>"setembro","10"=>"outubro","11"=>"novembro","12"=>"dezembro"
-    ];
-    $d = date("d",strtotime($data));
-    $m = $meses[date("m",strtotime($data))];
-    $a = date("Y",strtotime($data));
-    return "$d de $m de $a";
-}
-
-if(isset($_POST['salvar'])){
-    $anoAtual = date("Y");
-    $resUltimo = $db->query("SELECT numero, ano FROM portarias ORDER BY id DESC LIMIT 1");
-    $ultimo = $resUltimo->fetchArray();
-    if(!$ultimo || $ultimo['ano'] != $anoAtual){
-        $proxNumero = 1;
-    } else {
-        $proxNumero = $ultimo['numero'] + 1;
-    }
-    if(!empty($_POST['numero'])){
-        $numero = intval($_POST['numero']);
-        $proxNumero = $numero + 1;
-    } else {
-        $numero = $proxNumero;
-        $proxNumero++;
-    }
-    $procurador = $_POST['procurador'];
-    $sexo = $_POST['sexo'];
-    $oab = $_POST['oab'];
-    $processo = $_POST['processo'];
-    $autor = $_POST['autor'];
-    $vara = $_POST['vara'];
-    $data = $_POST['data'];
-
-    $db->exec("INSERT INTO portarias(numero,ano,procurador,sexo,oab,processo,autor,vara,data_portaria)
-    VALUES(
-        '$numero',
-        '$anoAtual',
-        '$procurador',
-        '$sexo',
-        '$oab',
-        '$processo',
-        '$autor',
-        '$vara',
-        '$data'
-    )");
-
-    echo "<script>window.open('gerar_pdf.php?id=".$db->lastInsertRowID()."&download=1','_blank');</script>";
-}
-
-$filtro="";
-if(isset($_GET['buscar'])){
-    $busca=$_GET['buscar'];
-    $filtro="WHERE processo LIKE '%$busca%' 
-    OR procurador LIKE '%$busca%' 
-    OR autor LIKE '%$busca%'";
-}
-
-$mensagem = "";
-if(isset($_GET['msg'])){
-    if($_GET['msg'] == 'excluido') $mensagem = "Portaria excluída com sucesso!";
-    if($_GET['msg'] == 'editado') $mensagem = "Portaria editada com sucesso!";
-}
-
-?>
-
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Tutorial do Sistema de Portarias</title>
+<title>Tutorial - Sistema de Portarias</title>
+
 <style>
-body { font-family:'Segoe UI', Tahoma, Geneva, Verdana,sans-serif; background:#f4f6f8; margin:0; padding:0; }
-.container { max-width:900px; margin:40px auto; background:#fff; padding:30px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.1); }
-h1,h2,h3 { color:#333; }
-h1 { text-align:center; margin-bottom:30px; }
-h2 { border-bottom:2px solid #4CAF50; padding-bottom:8px; margin-top:30px; }
-p, li { font-size:1em; line-height:1.6; }
-ul { margin-left:20px; }
-a { color:#4CAF50; text-decoration:none; }
-a:hover { text-decoration:underline; }
-button { background:#4CAF50; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; transition:0.3s; margin-top:20px; }
-button:hover { background:#45a049; }
+
+:root{
+--primary:#2c3e50;
+--secondary:#4CAF50;
+--danger:#dc3545;
+--bg:#f4f7f6;
+--card:#ffffff;
+--text:#333;
+}
+
+/* DARK MODE */
+body.dark-mode{
+--bg:#121212;
+--card:#1e1e1e;
+--text:#e4e4e4;
+--primary:#e4e4e4;
+}
+
+body{
+font-family:'Segoe UI',sans-serif;
+line-height:1.6;
+color:var(--text);
+background:var(--bg);
+margin:0;
+padding:20px;
+transition:0.3s;
+}
+
+.tutorial-container{
+max-width:800px;
+margin:0 auto;
+background:var(--card);
+padding:40px;
+border-radius:12px;
+box-shadow:0 4px 15px rgba(0,0,0,0.1);
+}
+
+h1{
+color:var(--primary);
+border-bottom:3px solid var(--secondary);
+padding-bottom:10px;
+}
+
+h2{
+color:var(--primary);
+margin-top:30px;
+display:flex;
+align-items:center;
+}
+
+.step{
+background:#e8f5e9;
+border-left:5px solid var(--secondary);
+padding:15px;
+margin:20px 0;
+border-radius:4px;
+}
+
+.warning{
+background:#ffebee;
+border-left:5px solid var(--danger);
+padding:15px;
+color:#b71c1c;
+font-weight:bold;
+}
+
+.info-box{
+background:#e3f2fd;
+border-left:5px solid #2196f3;
+padding:15px;
+margin:20px 0;
+}
+
+.number-rule{
+background:#fff3e0;
+border-left:5px solid #ff9800;
+padding:15px;
+margin:20px 0;
+}
+
+.btn-back{
+display:inline-block;
+margin-bottom:20px;
+text-decoration:none;
+color:var(--secondary);
+font-weight:bold;
+}
+
+/* botão dark */
+
+.dark-toggle{
+position:fixed;
+top:20px;
+right:20px;
+background:var(--primary);
+color:white;
+border:none;
+padding:10px 14px;
+border-radius:8px;
+cursor:pointer;
+font-size:16px;
+}
+
+body.dark-mode .step{background:#1f2d22;}
+body.dark-mode .warning{background:#2b1c1f;color:#ffb3b3;}
+body.dark-mode .info-box{background:#1b2a38;}
+body.dark-mode .number-rule{background:#2b241a;}
+
 </style>
 </head>
+
 <body>
 
-<div class="container">
-<h1>Tutorial do Sistema de Portarias</h1>
+<button class="dark-toggle" onclick="toggleDarkMode()">🌙</button>
 
-<h2>1. Acesso ao sistema</h2>
-<ul>
-<li>Acesse o endereço do sistema no navegador.</li>
-<li>Você verá o formulário de cadastro e o histórico de portarias.</li>
-</ul>
+<div class="tutorial-container">
 
-<h2>2. Cadastrando uma nova portaria</h2>
-<ul>
-<li>Preencha os campos do formulário:</li>
-<ul>
-    <li><strong>Número da Portaria (opcional):</strong> você pode digitar manualmente o número que deseja atribuir à portaria.  
-    <strong>Observação:</strong> se você digitar um número manualmente, o sistema continuará a sequência automática a partir desse número.  
-    Todo início de ano, os números são reiniciados e a contagem volta do 1.</li>
-    <li>Procurador, Sexo, OAB, Processo, Autor, Vara e Data</li>
-</ul>
-<li>Clique em <strong>Salvar Portaria</strong>.</li>
-<li>O PDF será gerado e aberto em nova aba para visualização e download.</li>
-<li>Uma mensagem de confirmação aparecerá no topo da tela.</li>
-</ul>
+<a href="index.php" class="btn-back">← Voltar para o Sistema</a>
 
-<h2>3. Editando uma portaria</h2>
-<ul>
-<li>No histórico, clique em <strong>Editar</strong> na portaria desejada.</li>
-<li>Altere os campos que desejar e clique em <strong>Salvar Alterações</strong>.</li>
-<li>A mensagem <strong>Portaria editada com sucesso!</strong> será exibida.</li>
-</ul>
+<h1>Manual de Uso do Sistema</h1>
 
-<h2>4. Apagando portarias</h2>
-<ul>
-<li><strong>Apagar individual:</strong> Clique em <strong>Apagar</strong> na linha desejada e confirme no modal.</li>
-<li><strong>Apagar múltiplas:</strong> Selecione as portarias desejadas e clique em <strong>Apagar Selecionados</strong>.</li>
-<li>Após a exclusão, a mensagem <strong>Portaria excluída com sucesso!</strong> aparecerá.</li>
-</ul>
+<p>Este guia ajudará você a criar e gerenciar suas portarias de forma simples e rápida.</p>
 
-<h2>5. Visualizar e baixar PDF</h2>
-<ul>
-<li>Na coluna Ações, clique em <strong>Visualizar</strong> para abrir o PDF.</li>
-<li>Clique em <strong>Download</strong> para salvar o PDF no seu computador.</li>
-</ul>
+<div class="info-box">
+<strong>💡 Dica de Ouro:</strong> O sistema salva tudo automaticamente. Se você preencher o formulário e clicar em salvar, a portaria já estará guardada no histórico abaixo.
+</div>
 
-<h2>6. Buscar portarias</h2>
-<ul>
-<li>Use o campo de busca para filtrar portarias por Processo, Procurador ou Autor.</li>
-</ul>
+<h2>1. Como Criar uma Nova Portaria</h2>
 
-<h2>7. Mensagens de sucesso</h2>
-<ul>
-<li>As mensagens aparecem no canto superior direito e desaparecem após alguns segundos:</li>
-<ul>
-<li>Portaria cadastrada com sucesso!</li>
-<li>Portaria editada com sucesso!</li>
-<li>Portaria excluída com sucesso!</li>
-</ul>
-</ul>
+<div class="step">
+<ol>
+<li>No lado esquerdo da tela, preencha os dados do <strong>Procurador</strong>, <strong>OAB</strong> e os dados do <strong>Processo</strong>.</li>
+<li><strong>Nº Portaria:</strong> Se você deixar em branco, o sistema colocará o próximo número disponível sozinho.</li>
+<li>Clique no botão verde <strong>"Gerar e Salvar"</strong>.</li>
+</ol>
+</div>
 
-<h2>8. Dicas de uso</h2>
-<ul>
-<li>Verifique os dados antes de salvar ou editar.</li>
-<li>Use a busca para localizar portarias antigas rapidamente.</li>
-<li>Use a seleção múltipla com cuidado.</li>
-<li>Mantenha backup do banco <code>portarias.db</code> periodicamente.</li>
-</ul>
+<h2>2. Entendendo a Numeração</h2>
 
-<a href="index.php"><button>Voltar ao Sistema</button></a>
+<div class="number-rule">
+
+<strong>Como os números são gerados:</strong>
+
+<ul>
+<li><strong>Sequência Automática:</strong> Se você deixar o campo "Nº Portaria" vazio, o sistema verifica qual foi o último número usado e soma +1.</li>
+<li><strong>Número Manual:</strong> Se você digitar um número manualmente, o sistema usará exatamente o que você digitou. A próxima portaria (se deixada em branco) seguirá a sequência a partir desse novo número.</li>
+<li><strong>Virada de Ano:</strong> Assim que o ano muda (ex: de 2025 para 2026), o sistema detecta a mudança e <strong>zera a contagem automaticamente</strong>, começando novamente do número 1 para o novo ano.</li>
+</ul>
 
 </div>
+
+<h2>3. O que acontece após clicar em Salvar?</h2>
+
+<p>O sistema faz duas coisas ao mesmo tempo:</p>
+
+<ul>
+<li><strong>Guarda os dados:</strong> A portaria aparece imediatamente na tabela de "Histórico".</li>
+<li><strong>Baixa o PDF:</strong> O arquivo da portaria será baixado automaticamente para o seu computador (verifique a pasta "Downloads").</li>
+</ul>
+
+<h2>4. Como Ver ou Editar uma Portaria Antiga</h2>
+
+<p>Na tabela de histórico, você verá três botões para cada linha:</p>
+
+<ul>
+<li><strong>Ver:</strong> Abre o documento PDF novamente para conferência ou impressão.</li>
+<li><strong>Editar:</strong> Caso tenha digitado algo errado, clique aqui para corrigir os dados.</li>
+<li><strong>Apagar:</strong> Remove a portaria do sistema.</li>
+</ul>
+
+<div class="warning">
+⚠️ ATENÇÃO: Ao apagar uma portaria, ela é removida para sempre. Não é possível recuperar portarias excluídas.
+</div>
+
+<h2>5. Dúvidas Comuns</h2>
+
+<p><strong>O download não iniciou:</strong> Verifique se o seu navegador não bloqueou um "pop-up". Geralmente aparece um aviso no canto superior direito da barra de endereços.</p>
+
+<p><strong>Como imprimir?</strong> Após o download, abra o arquivo PDF e use o comando de imprimir do seu visualizador de arquivos (como o Chrome ou Adobe Reader).</p>
+
+<br>
+
+<p style="text-align:center;color:#999;font-size:0.9em;">
+Sistema desenvolvido para a Procuradoria Geral do Município.
+</p>
+
+</div>
+
+<script>
+
+function toggleDarkMode(){
+document.body.classList.toggle("dark-mode");
+localStorage.setItem("darkmode",document.body.classList.contains("dark-mode"));
+}
+
+window.onload=function(){
+if(localStorage.getItem("darkmode")==="true"){
+document.body.classList.add("dark-mode");
+}
+}
+
+</script>
+
 </body>
 </html>

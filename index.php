@@ -54,7 +54,6 @@ if(isset($_POST['salvar'])){
 
     $novoId = $db->lastInsertRowID();
 
-    // Redireciona para a mesma página passando o ID para o download via parâmetro na URL
     header("Location: index.php?msg=editado&download_id=" . $novoId);
     exit;
 }
@@ -75,260 +74,427 @@ if(isset($_GET['msg'])){
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <title>Sistema de Portarias - Desktop</title>
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #4CAF50;
-            --accent-color: #ff5722;
-            --bg-body: #f0f2f5;
-            --bg-card: #ffffff;
-            --text-main: #333;
-            --border-radius: 8px;
-            --shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
+<meta charset="UTF-8">
+<title>Sistema de Portarias - Desktop</title>
 
-        body { 
-            font-family: 'Segoe UI', Roboto, sans-serif; 
-            background: var(--bg-body); 
-            margin: 0; 
-            color: var(--text-main);
-        }
+<style>
 
-        .container { 
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            grid-template-rows: auto 1fr;
-            gap: 20px;
-            padding: 20px;
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
+:root{
+--primary-color:#2c3e50;
+--secondary-color:#4CAF50;
+--accent-color:#ff5722;
+--bg-body:#f0f2f5;
+--bg-card:#ffffff;
+--text-main:#333;
+--border-radius:8px;
+--shadow:0 4px 12px rgba(0,0,0,0.08);
+}
 
-        .header-actions {
-            grid-column: 1 / -1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--bg-card);
-            padding: 15px 25px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-        }
+/* DARK MODE */
+body.dark-mode{
+--bg-body:#121212;
+--bg-card:#1e1e1e;
+--text-main:#e4e4e4;
+--primary-color:#e4e4e4;
+--shadow:0 4px 12px rgba(0,0,0,0.6);
+}
 
-        .header-actions img { height: 50px; }
+body{
+font-family:'Segoe UI',Roboto,sans-serif;
+background:var(--bg-body);
+margin:0;
+color:var(--text-main);
+transition:0.3s;
+}
 
-        .sidebar {
-            background: var(--bg-card);
-            padding: 25px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            height: fit-content;
-            position: sticky;
-            top: 20px;
-        }
+.container{
+display:grid;
+grid-template-columns:350px 1fr;
+grid-template-rows:auto 1fr;
+gap:20px;
+padding:20px;
+min-height:100vh;
+box-sizing:border-box;
+}
 
-        .main-content {
-            background: var(--bg-card);
-            padding: 25px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-        }
+.header-actions{
+grid-column:1 / -1;
+display:flex;
+justify-content:space-between;
+align-items:center;
+background:var(--bg-card);
+padding:15px 25px;
+border-radius:var(--border-radius);
+box-shadow:var(--shadow);
+}
 
-        h2 { 
-            color: var(--primary-color); 
-            margin: 0 0 20px 0;
-            font-size: 1.4rem;
-            border-left: 5px solid var(--secondary-color);
-            padding-left: 15px;
-        }
+.header-actions img{height:50px;}
 
-        form label { display: block; font-weight: 600; margin: 10px 0 5px 0; font-size: 0.85em; color: #666; }
-        form input, form select { 
-            width: 100%; padding: 10px; margin-bottom: 5px; 
-            border-radius: 5px; border: 1px solid #ddd; box-sizing: border-box; 
-        }
-        
-        form button.btn-save { 
-            background: var(--secondary-color); color: white; border: none; 
-            width: 100%; padding: 12px; margin-top: 15px; border-radius: 5px;
-            font-weight: bold; cursor: pointer; transition: 0.3s;
-        }
-        form button.btn-save:hover { background: #45a049; }
+.dark-toggle{
+cursor:pointer;
+background:var(--primary-color);
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:6px;
+font-size:14px;
+}
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background: #f8f9fa; color: var(--primary-color); padding: 15px; text-align: left; border-bottom: 2px solid #dee2e6; }
-        td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 0.9em; }
-        tr:hover { background: #f1f4f7; }
+.sidebar{
+background:var(--bg-card);
+padding:25px;
+border-radius:var(--border-radius);
+box-shadow:var(--shadow);
+height:fit-content;
+position:sticky;
+top:20px;
+}
 
-        .btn-group { display: flex; gap: 5px; }
-        .table-btn { 
-            background: #eee; border: 1px solid #ccc; padding: 5px 10px; 
-            border-radius: 4px; cursor: pointer; font-size: 0.75em; 
-        }
-        .table-btn.cancel { color: #dc3545; border-color: #ffc9c9; }
-        .table-btn.cancel:hover { background: #dc3545; color: white; }
+.main-content{
+background:var(--bg-card);
+padding:25px;
+border-radius:var(--border-radius);
+box-shadow:var(--shadow);
+}
 
-        .btn-tutorial {
-            background: var(--accent-color); color: white; padding: 10px 20px;
-            border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 0.9em;
-        }
+h2{
+color:var(--primary-color);
+margin:0 0 20px 0;
+font-size:1.4rem;
+border-left:5px solid var(--secondary-color);
+padding-left:15px;
+}
 
-        .toast { visibility:hidden; min-width:250px; background:var(--secondary-color); color:white; text-align:center; border-radius:5px; padding:15px; position:fixed; top:20px; right:20px; z-index:1000; box-shadow: var(--shadow); opacity:0; transition: 0.5s; }
-        .toast.show { visibility:visible; opacity:1; }
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index: 2000; }
-        .modal-content { background:#fff; padding:30px; border-radius:10px; text-align:center; width: 350px; }
-    </style>
+form label{display:block;font-weight:600;margin:10px 0 5px 0;font-size:0.85em;color:#777;}
+
+form input,form select{
+width:100%;
+padding:10px;
+margin-bottom:5px;
+border-radius:5px;
+border:1px solid #ddd;
+box-sizing:border-box;
+}
+
+body.dark-mode input,
+body.dark-mode select{
+background:#2a2a2a;
+color:#fff;
+border:1px solid #444;
+}
+
+form button.btn-save{
+background:var(--secondary-color);
+color:white;
+border:none;
+width:100%;
+padding:12px;
+margin-top:15px;
+border-radius:5px;
+font-weight:bold;
+cursor:pointer;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+th{
+background:#f8f9fa;
+padding:15px;
+text-align:left;
+border-bottom:2px solid #dee2e6;
+}
+
+body.dark-mode th{
+background:#2a2a2a;
+}
+
+td{
+padding:12px 15px;
+border-bottom:1px solid #eee;
+font-size:0.9em;
+}
+
+body.dark-mode td{
+border-bottom:1px solid #333;
+}
+
+tr:hover{
+background:#f1f4f7;
+}
+
+body.dark-mode tr:hover{
+background:#2a2a2a;
+}
+
+.btn-group{display:flex;gap:5px;}
+
+.table-btn{
+background:#eee;
+border:1px solid #ccc;
+padding:5px 10px;
+border-radius:4px;
+cursor:pointer;
+font-size:0.75em;
+}
+
+body.dark-mode .table-btn{
+background:#333;
+color:#fff;
+border:1px solid #444;
+}
+
+.table-btn.cancel{
+color:#dc3545;
+border-color:#ffc9c9;
+}
+
+.table-btn.cancel:hover{
+background:#dc3545;
+color:white;
+}
+
+.btn-tutorial{
+background:var(--accent-color);
+color:white;
+padding:10px 20px;
+border-radius:8px;
+text-decoration:none;
+font-weight:bold;
+font-size:0.9em;
+}
+
+.toast{
+visibility:hidden;
+min-width:250px;
+background:var(--secondary-color);
+color:white;
+text-align:center;
+border-radius:5px;
+padding:15px;
+position:fixed;
+top:20px;
+right:20px;
+z-index:1000;
+box-shadow:var(--shadow);
+opacity:0;
+transition:0.5s;
+}
+
+.toast.show{visibility:visible;opacity:1;}
+
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+align-items:center;
+justify-content:center;
+z-index:2000;
+}
+
+.modal-content{
+background:var(--bg-card);
+padding:30px;
+border-radius:10px;
+text-align:center;
+width:350px;
+}
+
+</style>
 </head>
+
 <body>
 
 <?php if($mensagem): ?>
 <div id="toast" class="toast"><?php echo $mensagem; ?></div>
 <script>
-    const toast = document.getElementById('toast');
-    toast.classList.add('show');
-    setTimeout(() => { toast.classList.remove('show'); }, 3000);
+const toast=document.getElementById('toast');
+toast.classList.add('show');
+setTimeout(()=>{toast.classList.remove('show');},3000);
 </script>
 <?php endif; ?>
 
 <?php if(isset($_GET['download_id'])): ?>
 <script>
-    window.onload = function() {
-        const id = "<?php echo intval($_GET['download_id']); ?>";
-        
-        // 1. Dispara o download
-        window.location.href = 'gerar_pdf.php?id=' + id + '&download=1';
-        
-        // 2. Limpa a URL para remover o download_id sem recarregar a página
-        if (window.history.replaceState) {
-            const url = new URL(window.location.href);
-            url.searchParams.delete('download_id');
-            // Opcional: remover também o parâmetro 'msg' se quiser limpar tudo
-            // url.searchParams.delete('msg'); 
-            window.history.replaceState({path: url.href}, '', url.href);
-        }
-    };
+window.onload=function(){
+const id="<?php echo intval($_GET['download_id']); ?>";
+window.location.href='gerar_pdf.php?id='+id+'&download=1';
+};
 </script>
 <?php endif; ?>
 
 <div class="container">
-    <header class="header-actions">
-        <img src="img/logoserra.png" alt="Logo Serra">
-        <a href="tutorial.php" class="btn-tutorial">Tutorial do Sistema</a>
-    </header>
 
-    <aside class="sidebar">
-        <h2>Nova Portaria</h2>
-        <form method="post">
-            <label>Nº Portaria (Opcional)</label>
-            <input type="number" name="numero" placeholder="Automático se vazio">
+<header class="header-actions">
 
-            <label>Procurador(a)</label>
-            <input type="text" name="procurador" required>
+<img src="img/logoserra.png">
 
-            <label>Sexo</label>
-            <select name="sexo" required>
-                <option value="M">Masculino</option>
-                <option value="F">Feminino</option>
-            </select>
+<div style="display:flex;gap:10px;align-items:center;">
+<a href="tutorial.php" class="btn-tutorial">Tutorial do Sistema</a>
+<button class="dark-toggle" onclick="toggleDarkMode()">🌙</button>
+</div>
 
-            <label>OAB</label>
-            <input type="text" name="oab" required>
+</header>
 
-            <label>Processo</label>
-            <input type="text" name="processo" required>
+<aside class="sidebar">
+<h2>Nova Portaria</h2>
 
-            <label>Autor</label>
-            <input type="text" name="autor" required>
+<form method="post">
 
-            <label>Vara</label>
-            <input type="text" name="vara" required>
+<label>Nº Portaria (Opcional)</label>
+<input type="number" name="numero" placeholder="Automático se vazio">
 
-            <label>Data</label>
-            <input type="date" name="data" required>
+<label>Procurador(a)</label>
+<input type="text" name="procurador" required>
 
-            <button type="submit" name="salvar" class="btn-save">Gerar e Salvar</button>
-        </form>
-    </aside>
+<label>Sexo</label>
+<select name="sexo" required>
+<option value="M">Masculino</option>
+<option value="F">Feminino</option>
+</select>
 
-    <main class="main-content">
-        <h2>Histórico de Portarias</h2>
-        
-        <form id="formExcluirVarias" method="post">
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" onclick="marcarTodos(this)"></th>
-                            <th>Nº/Ano</th>
-                            <th>Procurador</th>
-                            <th>Processo/Autor</th>
-                            <th>Data</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        $res = $db->query("SELECT * FROM portarias $filtro ORDER BY id DESC");
-                        while($row=$res->fetchArray()){
-                            echo "<tr>";
-                            echo "<td><input type='checkbox' name='selecionados[]' value='".$row['id']."'></td>";
-                            echo "<td><strong>".$row['numero']."/".$row['ano']."</strong></td>";
-                            echo "<td>".$row['procurador']."</td>";
-                            echo "<td><small>".$row['processo']."<br>".$row['autor']."</small></td>";
-                            echo "<td>".dataExtenso($row['data_portaria'])."</td>";
-                            echo "<td>
-                                <div class='btn-group'>
-                                    <button type='button' class='table-btn' onclick=\"window.open('gerar_pdf.php?id=".$row['id']."','_blank')\">Ver</button>
-                                    <button type='button' class='table-btn' onclick=\"window.location='editar.php?id=".$row['id']."'\">Editar</button>
-                                    <button type='button' class='table-btn cancel' onclick='abrirModal(".$row['id'].")'>Apagar</button>
-                                </div>
-                            </td>";
-                            echo "</tr>";
-                        }
-                        ?>
-                    </tbody>
-                </table>
-            </div>
-            <br>
-            <button type="button" class="table-btn cancel" onclick="abrirModalMultiplo()">Apagar Selecionados</button>
-        </form>
-    </main>
+<label>OAB</label>
+<input type="text" name="oab" required>
+
+<label>Processo</label>
+<input type="text" name="processo" required>
+
+<label>Autor</label>
+<input type="text" name="autor" required>
+
+<label>Vara</label>
+<input type="text" name="vara" required>
+
+<label>Data</label>
+<input type="date" name="data" required>
+
+<button type="submit" name="salvar" class="btn-save">Gerar e Salvar</button>
+
+</form>
+</aside>
+
+<main class="main-content">
+
+<h2>Histórico de Portarias</h2>
+
+<form id="formExcluirVarias" method="post">
+
+<div style="overflow-x:auto;">
+
+<table>
+
+<thead>
+<tr>
+<th><input type="checkbox" onclick="marcarTodos(this)"></th>
+<th>Nº/Ano</th>
+<th>Procurador</th>
+<th>Processo/Autor</th>
+<th>Data</th>
+<th>Ações</th>
+</tr>
+</thead>
+
+<tbody>
+
+<?php
+$res=$db->query("SELECT * FROM portarias $filtro ORDER BY id DESC");
+while($row=$res->fetchArray()){
+echo "<tr>";
+echo "<td><input type='checkbox' name='selecionados[]' value='".$row['id']."'></td>";
+echo "<td><strong>".$row['numero']."/".$row['ano']."</strong></td>";
+echo "<td>".$row['procurador']."</td>";
+echo "<td><small>".$row['processo']."<br>".$row['autor']."</small></td>";
+echo "<td>".dataExtenso($row['data_portaria'])."</td>";
+echo "<td>
+<div class='btn-group'>
+<button type='button' class='table-btn' onclick=\"window.open('gerar_pdf.php?id=".$row['id']."','_blank')\">Ver</button>
+<button type='button' class='table-btn' onclick=\"window.location='editar.php?id=".$row['id']."'\">Editar</button>
+<button type='button' class='table-btn cancel' onclick='abrirModal(".$row['id'].")'>Apagar</button>
+</div>
+</td>";
+echo "</tr>";
+}
+?>
+
+</tbody>
+</table>
+
+</div>
+
+<br>
+
+<button type="button" class="table-btn cancel" onclick="abrirModalMultiplo()">Apagar Selecionados</button>
+
+</form>
+
+</main>
 </div>
 
 <div id="modalExcluir" class="modal">
-    <div class="modal-content">
-        <h3>Confirmar</h3>
-        <p>Deseja apagar os registros selecionados?</p>
-        <button class="btn-save" style="background:#dc3545" onclick="confirmarExclusao()">Sim, Apagar</button>
-        <button class="table-btn" onclick="fecharModal()">Cancelar</button>
-    </div>
+<div class="modal-content">
+<h3>Confirmar</h3>
+<p>Deseja apagar os registros selecionados?</p>
+<button class="btn-save" style="background:#dc3545" onclick="confirmarExclusao()">Sim, Apagar</button>
+<button class="table-btn" onclick="fecharModal()">Cancelar</button>
+</div>
 </div>
 
 <script>
-let idExcluir = null;
-let excluirMultiplo = false;
 
-function abrirModal(id){ idExcluir = id; excluirMultiplo = false; document.getElementById("modalExcluir").style.display="flex"; }
+let idExcluir=null;
+let excluirMultiplo=false;
+
+function abrirModal(id){
+idExcluir=id;
+excluirMultiplo=false;
+document.getElementById("modalExcluir").style.display="flex";
+}
+
 function abrirModalMultiplo(){
-    const cb = document.querySelectorAll('input[name="selecionados[]"]:checked');
-    if(cb.length===0){ alert("Selecione itens primeiro."); return; }
-    excluirMultiplo = true; document.getElementById("modalExcluir").style.display="flex";
+const cb=document.querySelectorAll('input[name="selecionados[]"]:checked');
+if(cb.length===0){alert("Selecione itens primeiro.");return;}
+excluirMultiplo=true;
+document.getElementById("modalExcluir").style.display="flex";
 }
-function fecharModal(){ document.getElementById("modalExcluir").style.display="none"; }
+
+function fecharModal(){
+document.getElementById("modalExcluir").style.display="none";
+}
+
 function confirmarExclusao(){
-    if(excluirMultiplo){
-        document.getElementById("formExcluirVarias").action="apagar_varios.php?msg=excluido";
-        document.getElementById("formExcluirVarias").submit();
-    } else {
-        window.location = "apagar.php?id=" + idExcluir + "&msg=excluido";
-    }
+if(excluirMultiplo){
+document.getElementById("formExcluirVarias").action="apagar_varios.php?msg=excluido";
+document.getElementById("formExcluirVarias").submit();
+}else{
+window.location="apagar.php?id="+idExcluir+"&msg=excluido";
 }
+}
+
 function marcarTodos(source){
-    const checkboxes = document.querySelectorAll('input[name="selecionados[]"]');
-    checkboxes.forEach(cb => cb.checked = source.checked);
+const checkboxes=document.querySelectorAll('input[name="selecionados[]"]');
+checkboxes.forEach(cb=>cb.checked=source.checked);
 }
+
+/* DARK MODE */
+
+function toggleDarkMode(){
+document.body.classList.toggle("dark-mode");
+localStorage.setItem("darkmode",document.body.classList.contains("dark-mode"));
+}
+
+window.onload=function(){
+if(localStorage.getItem("darkmode")==="true"){
+document.body.classList.add("dark-mode");
+}
+};
+
 </script>
 
 </body>
