@@ -1,4 +1,7 @@
 <?php
+// Desativa a exibição de erros para não corromper o PDF caso existam warnings
+error_reporting(0);
+ini_set('display_errors', 0);
 
 require('fpdf/fpdf.php');
 
@@ -18,9 +21,18 @@ function dataExtenso($data){
     return "$d de $m de $a";
 }
 
-$id = $_GET['id'];
+// Verifica se o ID foi passado
+if(!isset($_GET['id'])){
+    die("ID da portaria não fornecido.");
+}
+
+$id = intval($_GET['id']);
 $res = $db->query("SELECT * FROM portarias WHERE id=$id");
 $p = $res->fetchArray();
+
+if(!$p){
+    die("Portaria não encontrada.");
+}
 
 $numero = $p['numero'];
 $ano = $p['ano'];
@@ -42,26 +54,26 @@ if($sexo=="F"){
 
 class PDF extends FPDF{
     function Header(){
-        // Largura e altura da marca d'água em mm (4cm = 40mm)
         $largura = 30;
         $altura = 30;
-
-        // Calcula posição X para centralizar no papel (A4 = 210mm)
         $x = (210 - $largura)/2;
-        $y = 10; // topo da página, 10mm de margem
-
-        // Coloca a imagem
-        $this->Image('img/logoserra.png', $x, $y, $largura, $altura);
-        // Para transparência real, o ideal é usar PNG com fundo transparente e opacidade reduzida
+        $y = 10;
+        // Verifica se a imagem existe antes de tentar carregar para evitar erro Fatal
+        if(file_exists('img/logoserra.png')){
+            $this->Image('img/logoserra.png', $x, $y, $largura, $altura);
+        }
     }
 }
+
+// Limpa qualquer saída anterior (espaços em branco, ecos) para não corromper o PDF
+ob_end_clean();
 
 $pdf = new PDF();
 $pdf->AddPage();
 
 // Cabeçalho do PDF
 $pdf->SetFont('Arial','B',10);
-$pdf->Ln(35); // espaço suficiente abaixo da marca d'água
+$pdf->Ln(35); 
 $pdf->Cell(0,10,utf8_decode('PREFEITURA MUNICIPAL DA SERRA'),0,1,'C');
 $pdf->Cell(0,8,utf8_decode('ESTADO DO ESPÍRITO SANTO'),0,1,'C');
 $pdf->Cell(0,8,utf8_decode('PROCURADORIA-GERAL DO MUNICÍPIO'),0,1,'C');
@@ -89,10 +101,8 @@ $texto="Designar o Procurador Municipal, $titulo $procurador, $descricao, para p
 $pdf->MultiCell(0,8,utf8_decode($texto));
 
 $pdf->Ln(15);
-// Alterado para 'C' para centralizar a data no meio da folha
 $pdf->Cell(0, 10, utf8_decode("Serra/ES, $data."), 0, 1, 'C'); 
 
-// Aumentado o espaço (Ln) de 20 para 40 para um distanciamento maior até a assinatura
 $pdf->Ln(40); 
 
 $pdf->SetFont('Arial', 'B', 12);
@@ -100,11 +110,11 @@ $pdf->Cell(0, 8, utf8_decode("ALESSANDRA COSTA FERREIRA NUNES"), 0, 1, 'C');
 $pdf->SetFont('Arial', '', 12);
 $pdf->Cell(0, 8, utf8_decode("Procuradora-Geral do Município de Serra"), 0, 1, 'C');
 
-// Forçar download ou abrir no navegador
-if(isset($_GET['download'])){
-    $pdf->Output('D', 'Portaria_'.$numero.'_'.$ano.'.pdf'); 
+// Lógica de Saída
+if(isset($_GET['download']) && $_GET['download'] == '1'){
+    $nomeArquivo = 'Portaria_'.str_replace('/', '_', $numero).'_'.$ano.'.pdf';
+    $pdf->Output('D', $nomeArquivo); 
 } else {
     $pdf->Output('I'); 
 }
-
 ?>

@@ -52,7 +52,11 @@ if(isset($_POST['salvar'])){
     $db->exec("INSERT INTO portarias(numero,ano,procurador,sexo,oab,processo,autor,vara,data_portaria)
     VALUES('$numero', '$anoAtual', '$procurador', '$sexo', '$oab', '$processo', '$autor', '$vara', '$data')");
 
-    echo "<script>window.open('gerar_pdf.php?id=".$db->lastInsertRowID()."&download=1','_blank'); window.location='index.php';</script>";
+    $novoId = $db->lastInsertRowID();
+
+    // Redireciona para a mesma página passando o ID para o download via parâmetro na URL
+    header("Location: index.php?msg=editado&download_id=" . $novoId);
+    exit;
 }
 
 $filtro="";
@@ -64,7 +68,7 @@ if(isset($_GET['buscar'])){
 $mensagem = "";
 if(isset($_GET['msg'])){
     if($_GET['msg'] == 'excluido') $mensagem = "Portaria excluída com sucesso!";
-    if($_GET['msg'] == 'editado') $mensagem = "Portaria editada com sucesso!";
+    if($_GET['msg'] == 'editado') $mensagem = "Portaria salva com sucesso!";
 }
 ?>
 
@@ -188,6 +192,26 @@ if(isset($_GET['msg'])){
 </script>
 <?php endif; ?>
 
+<?php if(isset($_GET['download_id'])): ?>
+<script>
+    window.onload = function() {
+        const id = "<?php echo intval($_GET['download_id']); ?>";
+        
+        // 1. Dispara o download
+        window.location.href = 'gerar_pdf.php?id=' + id + '&download=1';
+        
+        // 2. Limpa a URL para remover o download_id sem recarregar a página
+        if (window.history.replaceState) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('download_id');
+            // Opcional: remover também o parâmetro 'msg' se quiser limpar tudo
+            // url.searchParams.delete('msg'); 
+            window.history.replaceState({path: url.href}, '', url.href);
+        }
+    };
+</script>
+<?php endif; ?>
+
 <div class="container">
     <header class="header-actions">
         <img src="img/logoserra.png" alt="Logo Serra">
@@ -197,10 +221,6 @@ if(isset($_GET['msg'])){
     <aside class="sidebar">
         <h2>Nova Portaria</h2>
         <form method="post">
-            <button type="button" class="btn-save" style="background:#2980b9; margin-top: 10px;" onclick="window.location='gerar_zip.php'">
-    📦 Baixar Todas (ZIP)
-</button>
-
             <label>Nº Portaria (Opcional)</label>
             <input type="number" name="numero" placeholder="Automático se vazio">
 
@@ -280,8 +300,7 @@ if(isset($_GET['msg'])){
 <div id="modalExcluir" class="modal">
     <div class="modal-content">
         <h3>Confirmar</h3>
-        <p style="color: #dc3545; font-weight: bold;">A EXCLUSÃO É PERMANENTE E NÃO DÁ PRA RECUPERAR</p>
-        <p>Deseja realmente apagar?</p>
+        <p>Deseja apagar os registros selecionados?</p>
         <button class="btn-save" style="background:#dc3545" onclick="confirmarExclusao()">Sim, Apagar</button>
         <button class="table-btn" onclick="fecharModal()">Cancelar</button>
     </div>
