@@ -1,6 +1,26 @@
 <?php
 $db = new SQLite3('data/portarias.db');
 
+// --- NOVA LÓGICA DE API PARA PREENCHIMENTO AUTOMÁTICO ---
+if(isset($_GET['buscar_dados'])){
+    $tipo = $_GET['tipo'];
+    $valor = $_GET['valor'];
+    $dados = [];
+    
+    if($tipo == 'procurador'){
+        $res = $db->query("SELECT oab, sexo FROM portarias WHERE procurador = '$valor' ORDER BY id DESC LIMIT 1");
+        $dados = $res->fetchArray(SQLITE3_ASSOC);
+    } elseif($tipo == 'processo'){
+        $res = $db->query("SELECT autor, vara FROM portarias WHERE processo = '$valor' ORDER BY id DESC LIMIT 1");
+        $dados = $res->fetchArray(SQLITE3_ASSOC);
+    }
+    
+    header('Content-Type: application/json');
+    echo json_encode($dados ?: []);
+    exit;
+}
+// -------------------------------------------------------
+
 $db->exec("CREATE TABLE IF NOT EXISTS portarias(
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 numero INTEGER,
@@ -257,34 +277,34 @@ window.addEventListener("load", function(){
         <input type="number" name="numero" placeholder="Automático se vazio">
 
         <label>Procurador(a)</label>
-        <input type="text" name="procurador" list="datalist_procurador" required autocomplete="off">
+        <input type="text" name="procurador" id="proc_input" list="datalist_procurador" required autocomplete="off" onchange="autoPreencher('procurador', this.value)">
         <datalist id="datalist_procurador">
             <?php while($row = $lista_procuradores->fetchArray()) echo "<option value='".htmlspecialchars($row['procurador'])."'>"; ?>
         </datalist>      
         
         <label>Sexo</label>
-        <select name="sexo" required><option value="M">Masculino</option><option value="F">Feminino</option></select>
+        <select name="sexo" id="sexo_input" required><option value="M">Masculino</option><option value="F">Feminino</option></select>
         
         <label>OAB</label>
-        <input type="text" name="oab" list="datalist_oab" required autocomplete="off">
+        <input type="text" name="oab" id="oab_input" list="datalist_oab" required autocomplete="off">
         <datalist id="datalist_oab">
             <?php while($row = $lista_oab->fetchArray()) echo "<option value='".htmlspecialchars($row['oab'])."'>"; ?>
         </datalist>
         
         <label>Processo</label>
-        <input type="text" name="processo" list="datalist_processo" required autocomplete="off">
+        <input type="text" name="processo" id="processo_input" list="datalist_processo" required autocomplete="off" onchange="autoPreencher('processo', this.value)">
         <datalist id="datalist_processo">
             <?php while($row = $lista_processos->fetchArray()) echo "<option value='".htmlspecialchars($row['processo'])."'>"; ?>
         </datalist>
         
         <label>Autor</label>
-        <input type="text" name="autor" list="datalist_autor" required autocomplete="off">
+        <input type="text" name="autor" id="autor_input" list="datalist_autor" required autocomplete="off">
         <datalist id="datalist_autor">
             <?php while($row = $lista_autores->fetchArray()) echo "<option value='".htmlspecialchars($row['autor'])."'>"; ?>
         </datalist>
         
         <label>Vara</label>
-        <input type="text" name="vara" list="datalist_vara" required autocomplete="off">
+        <input type="text" name="vara" id="vara_input" list="datalist_vara" required autocomplete="off">
         <datalist id="datalist_vara">
             <?php while($row = $lista_varas->fetchArray()) echo "<option value='".htmlspecialchars($row['vara'])."'>"; ?>
         </datalist>
@@ -369,6 +389,24 @@ window.addEventListener("load", function(){
 </div>
 
 <script>
+// FUNÇÃO DE AUTO-PREENCHIMENTO
+function autoPreencher(tipo, valor) {
+    if(!valor) return;
+    fetch(`index.php?buscar_dados=1&tipo=${tipo}&valor=${encodeURIComponent(valor)}`)
+        .then(response => response.json())
+        .then(data => {
+            if(Object.keys(data).length > 0) {
+                if(tipo === 'procurador') {
+                    document.getElementById('oab_input').value = data.oab || '';
+                    document.getElementById('sexo_input').value = data.sexo || 'M';
+                } else if(tipo === 'processo') {
+                    document.getElementById('autor_input').value = data.autor || '';
+                    document.getElementById('vara_input').value = data.vara || '';
+                }
+            }
+        });
+}
+
 let idExcluir=null;
 let excluirMultiplo=false;
 
