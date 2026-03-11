@@ -103,8 +103,8 @@ $lista_varas = $db->query("SELECT DISTINCT vara FROM portarias ORDER BY vara ASC
 body.dark-mode{
 --bg-body:#121212;
 --bg-card:#1e1e1e;
---text-main:#e4e4e4;
---primary-color:#e4e4e4;
+--text-main:#ffffff;
+--primary-color:#ffffff;
 --shadow:0 4px 12px rgba(0,0,0,0.6);
 }
 
@@ -139,7 +139,31 @@ box-shadow:var(--shadow);
 
 .header-actions img{height:50px;}
 
-.dark-toggle{ cursor:pointer; background:var(--primary-color); color:white; border:none; padding:8px 12px; border-radius:6px; font-size:14px; }
+.dark-toggle {
+    cursor: pointer;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 50px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    font-weight: 600;
+}
+
+.dark-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+body.dark-mode .dark-toggle {
+    background: #f1c40f;
+    color: #2c3e50;
+}
 
 .sidebar{ background:var(--bg-card); padding:25px; border-radius:var(--border-radius); box-shadow:var(--shadow); height:fit-content; position:sticky; top:20px; }
 .main-content{ background:var(--bg-card); padding:25px; border-radius:var(--border-radius); box-shadow:var(--shadow); }
@@ -147,6 +171,8 @@ box-shadow:var(--shadow);
 h2{ color:var(--primary-color); margin: 0 0 20px 0; font-size: 1.4rem; border-left: 5px solid var(--secondary-color); padding-left: 15px; }
 
 form label{ display:block; font-weight:600; margin:10px 0 5px 0; font-size:0.85em; color:#777; }
+body.dark-mode form label { color: #bbbbbb; }
+
 form input, form select{ width:100%; padding:10px; margin-bottom:5px; border-radius:5px; border:1px solid #ddd; box-sizing:border-box; background: var(--bg-card); color: var(--text-main); }
 
 .filter-bar { 
@@ -162,7 +188,20 @@ form input, form select{ width:100%; padding:10px; margin-bottom:5px; border-rad
     margin-bottom: 0; 
     min-width: 150px; 
 }
-.filter-bar button { padding: 10px 20px; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer; }
+
+.filter-bar button { 
+    padding: 10px 20px; 
+    background: var(--primary-color); 
+    color: #ffffff !important; 
+    border: none; 
+    border-radius: 5px; 
+    cursor: pointer; 
+}
+
+body.dark-mode .filter-bar button {
+    background: #2c3e50; 
+    color: #ffffff !important;
+}
 
 table{ width:100%; border-collapse:collapse; margin-top:10px; }
 th{ background:rgba(0,0,0,0.03); padding:15px; text-align:left; border-bottom:2px solid #dee2e6; }
@@ -205,7 +244,9 @@ window.addEventListener("load", function(){
     <img src="img/logoserra.png">
     <div style="display:flex;gap:10px;align-items:center;">
         <a href="tutorial.php" class="btn-tutorial">Tutorial do Sistema</a>
-        <button class="dark-toggle" onclick="toggleDarkMode()">🌙</button>
+        <button class="dark-toggle" id="btnDark" onclick="toggleDarkMode()">
+            <span id="dark-icon">🌙</span> <span id="dark-text">Modo Escuro</span>
+        </button>
     </div>
 </header>
 
@@ -263,7 +304,6 @@ window.addEventListener("load", function(){
         <select name="filtro_procurador">
             <option value="">Todos Procuradores</option>
             <?php 
-            // Reiniciar o ponteiro para o filtro
             $lista_procuradores_filtro = $db->query("SELECT DISTINCT procurador FROM portarias ORDER BY procurador ASC");
             while($p = $lista_procuradores_filtro->fetchArray()){
                 $sel = (isset($_GET['filtro_procurador']) && $_GET['filtro_procurador'] == $p['procurador']) ? 'selected' : '';
@@ -362,9 +402,26 @@ function confirmarExclusao(){
 
 function marcarTodos(s){ document.querySelectorAll('input[name="selecionados[]"]').forEach(c=>c.checked=s.checked); }
 
+function updateDarkModeUI() {
+    const isDark = document.body.classList.contains("dark-mode");
+    const icon = document.getElementById("dark-icon");
+    const text = document.getElementById("dark-text");
+    
+    if(icon && text) {
+        if(isDark) {
+            icon.innerText = "☀️";
+            text.innerText = "Modo Claro";
+        } else {
+            icon.innerText = "🌙";
+            text.innerText = "Modo Escuro";
+        }
+    }
+}
+
 function toggleDarkMode(){
     document.body.classList.toggle("dark-mode");
     localStorage.setItem("darkmode", document.body.classList.contains("dark-mode"));
+    updateDarkModeUI();
 }
 
 function baixarVarios() {
@@ -375,7 +432,12 @@ function baixarVarios() {
     setTimeout(() => f.action = "", 500);
 }
 
-window.onload = () => { if(localStorage.getItem("darkmode")==="true") document.body.classList.add("dark-mode"); };
+window.onload = () => { 
+    if(localStorage.getItem("darkmode")==="true") {
+        document.body.classList.add("dark-mode");
+    }
+    updateDarkModeUI();
+};
 </script>
 </body>
 </html>

@@ -19,8 +19,8 @@
 body.dark-mode{
 --bg:#121212;
 --card:#1e1e1e;
---text:#e4e4e4;
---primary:#e4e4e4;
+--text:#ffffff;
+--primary:#ffffff;
 }
 
 body{
@@ -93,32 +93,51 @@ color:var(--secondary);
 font-weight:bold;
 }
 
-/* botão dark */
+/* botão dark moderno */
 
-.dark-toggle{
-position:fixed;
-top:20px;
-right:20px;
-background:var(--primary);
-color:white;
-border:none;
-padding:10px 14px;
-border-radius:8px;
-cursor:pointer;
-font-size:16px;
+.dark-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    cursor: pointer;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 50px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    font-weight: 600;
+    z-index: 1000;
 }
 
-body.dark-mode .step{background:#1f2d22;}
+.dark-toggle:hover {
+    transform: scale(1.05);
+}
+
+body.dark-mode .dark-toggle {
+    background: #f1c40f;
+    color: #2c3e50;
+}
+
+body.dark-mode .step{background:#1f2d22; color:#e4e4e4;}
 body.dark-mode .warning{background:#2b1c1f;color:#ffb3b3;}
-body.dark-mode .info-box{background:#1b2a38;}
-body.dark-mode .number-rule{background:#2b241a;}
+body.dark-mode .info-box{background:#1b2a38; color:#e4e4e4;}
+body.dark-mode .number-rule{background:#2b241a; color:#e4e4e4;}
+body.dark-mode .btn-back { color: #81c784; }
 
 </style>
 </head>
 
 <body>
 
-<button class="dark-toggle" onclick="toggleDarkMode()">🌙</button>
+<button class="dark-toggle" id="btnDark" onclick="toggleDarkMode()">
+    <span id="dark-icon">🌙</span> <span id="dark-text">Modo Escuro</span>
+</button>
 
 <div class="tutorial-container">
 
@@ -150,8 +169,8 @@ body.dark-mode .number-rule{background:#2b241a;}
 
 <ul>
 <li><strong>Sequência Automática:</strong> Se você deixar o campo "Nº Portaria" vazio, o sistema verifica qual foi o último número usado e soma +1.</li>
-<li><strong>Número Manual:</strong> Se você digitar um número manualmente, o sistema usará exatamente o que você digitou. A próxima portaria (se deixada em branco) seguirá a sequência a partir desse novo número.</li>
-<li><strong>Virada de Ano:</strong> Assim que o ano muda (ex: de 2025 para 2026), o sistema detecta a mudança e <strong>zera a contagem automaticamente</strong>, começando novamente do número 1 para o novo ano.</li>
+<li><strong>Número Manual:</strong> Se você digitar um número manualmente, o sistema usará exatamente o que você digitou.</li>
+<li><strong>Virada de Ano:</strong> Assim que o ano muda, o sistema detecta a mudança e <strong>zera a contagem automaticamente</strong>.</li>
 </ul>
 
 </div>
@@ -162,7 +181,7 @@ body.dark-mode .number-rule{background:#2b241a;}
 
 <ul>
 <li><strong>Guarda os dados:</strong> A portaria aparece imediatamente na tabela de "Histórico".</li>
-<li><strong>Baixa o PDF:</strong> O arquivo da portaria será baixado automaticamente para o seu computador (verifique a pasta "Downloads").</li>
+<li><strong>Baixa o PDF:</strong> O arquivo da portaria será baixado automaticamente para o seu computador.</li>
 </ul>
 
 <h2>4. Como Ver ou Editar uma Portaria Antiga</h2>
@@ -181,9 +200,9 @@ body.dark-mode .number-rule{background:#2b241a;}
 
 <h2>5. Dúvidas Comuns</h2>
 
-<p><strong>O download não iniciou:</strong> Verifique se o seu navegador não bloqueou um "pop-up". Geralmente aparece um aviso no canto superior direito da barra de endereços.</p>
+<p><strong>O download não iniciou:</strong> Verifique se o seu navegador não bloqueou um "pop-up".</p>
 
-<p><strong>Como imprimir?</strong> Após o download, abra o arquivo PDF e use o comando de imprimir do seu visualizador de arquivos (como o Chrome ou Adobe Reader).</p>
+<p><strong>Como imprimir?</strong> Após o download, abra o arquivo PDF e use o comando de imprimir do seu navegador.</p>
 
 <br>
 
@@ -195,15 +214,33 @@ Sistema desenvolvido para a Procuradoria Geral do Município.
 
 <script>
 
-function toggleDarkMode(){
-document.body.classList.toggle("dark-mode");
-localStorage.setItem("darkmode",document.body.classList.contains("dark-mode"));
+function updateDarkModeUI() {
+    const isDark = document.body.classList.contains("dark-mode");
+    const icon = document.getElementById("dark-icon");
+    const text = document.getElementById("dark-text");
+    
+    if(icon && text) {
+        if(isDark) {
+            icon.innerText = "☀️";
+            text.innerText = "Modo Claro";
+        } else {
+            icon.innerText = "🌙";
+            text.innerText = "Modo Escuro";
+        }
+    }
 }
 
-window.onload=function(){
-if(localStorage.getItem("darkmode")==="true"){
-document.body.classList.add("dark-mode");
+function toggleDarkMode(){
+    document.body.classList.toggle("dark-mode");
+    localStorage.setItem("darkmode", document.body.classList.contains("dark-mode"));
+    updateDarkModeUI();
 }
+
+window.onload = function(){
+    if(localStorage.getItem("darkmode") === "true"){
+        document.body.classList.add("dark-mode");
+    }
+    updateDarkModeUI();
 }
 
 </script>
