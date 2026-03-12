@@ -216,17 +216,20 @@ window.addEventListener("load", function(){
                 <?php
                 $res=$db->query("SELECT * FROM portarias $filtro ORDER BY id DESC");
                 while($row=$res->fetchArray()){
-                    echo "<tr>
-                        <td><input type='checkbox' name='selecionados[]' value='".$row['id']."'></td>
-                        <td><strong>".$row['numero']."/".$row['ano']."</strong></td>
-                        <td>".$row['procurador']."</td>
-                        <td><small>".$row['processo']."</small></td>
-                        <td>
-                            <button type='button' class='table-btn' onclick=\"window.open('gerar_pdf.php?id=".$row['id']."','_blank')\">Ver</button>
-                            <button type='button' class='table-btn' style='color:#e74c3c' onclick='abrirModal(".$row['id'].")'>Apagar</button>
-                        </td>
-                    </tr>";
-                }
+    echo "<tr>
+        <td><input type='checkbox' name='selecionados[]' value='".$row['id']."'></td>
+        <td><strong>".$row['numero']."/".$row['ano']."</strong></td>
+        <td>".$row['procurador']."</td>
+        <td><small>".$row['processo']."</small></td>
+        <td>
+            <button type='button' class='table-btn' onclick=\"window.open('gerar_pdf.php?id=".$row['id']."','_blank')\">Ver</button>
+            
+            <button type='button' class='table-btn' style='background:#3498db; color:white; border:none;' onclick=\"location.href='gerar_docx.php?id=".$row['id']."'\">WORD</button>
+            
+            <button type='button' class='table-btn' style='color:#e74c3c' onclick='abrirModal(".$row['id'].")'>Apagar</button>
+        </td>
+    </tr>";
+}
                 ?>
             </tbody>
         </table>
@@ -315,6 +318,11 @@ window.onload = () => {
     if(localStorage.getItem("darkmode")==="true") document.body.classList.add("dark-mode");
     updateDarkModeUI();
 };
+
+if (window.location.search.includes('msg=')) {
+    const novaUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, novaUrl);
+}
 </script>
 </body>
 </html>
