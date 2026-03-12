@@ -1,171 +1,132 @@
 <?php
 
-$contador_file = "data/contador.txt";
+error_reporting(0);
+ini_set('display_errors', 0);
 
-if(isset($_POST['gerar'])){
+require 'vendor/autoload.php';
 
-$numero = (int)file_get_contents($contador_file);
-$numero++;
+use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\Shared\Converter;
 
-file_put_contents($contador_file,$numero);
+$db = new SQLite3('data/portarias.db');
 
-$ano = date("Y");
-$data = date("d/m/Y");
+function dataExtenso($data){
+    $meses = [
+        "01"=>"janeiro","02"=>"fevereiro","03"=>"março","04"=>"abril",
+        "05"=>"maio","06"=>"junho","07"=>"julho","08"=>"agosto",
+        "09"=>"setembro","10"=>"outubro","11"=>"novembro","12"=>"dezembro"
+    ];
 
-$procurador = $_POST['procurador'];
-$genero = $_POST['genero'];
-$oab = $_POST['oab'];
-$processo = $_POST['processo'];
-$autor = $_POST['autor'];
-$vara = $_POST['vara'];
+    $d = date("d",strtotime($data));
+    $m = $meses[date("m",strtotime($data))];
+    $a = date("Y",strtotime($data));
 
-if($genero == "F"){
+    return "$d de $m de $a";
+}
 
-$genero_texto = "brasileira, advogada, inscrita na OAB/ES, sob o nº $oab";
+if(!isset($_GET['id'])){
+    die("ID da portaria não fornecido.");
+}
 
+$id = intval($_GET['id']);
+$res = $db->query("SELECT * FROM portarias WHERE id=$id");
+$p = $res->fetchArray();
+
+if(!$p){
+    die("Portaria não encontrada.");
+}
+
+$numero = $p['numero'];
+$ano = $p['ano'];
+$procurador = $p['procurador'];
+$sexo = $p['sexo'];
+$oab = $p['oab'];
+$matricula = $p['matricula'] ?? 'N/A';
+$processo = $p['processo'];
+$autor = $p['autor'];
+$vara = $p['vara'];
+$data = dataExtenso($p['data_portaria']);
+
+if($sexo=="F"){
+    $titulo="Dra.";
+    $descricao="brasileira, advogada, inscrita na OAB/ES sob o nº $oab, matrícula nº $matricula";
 }else{
-
-$genero_texto = "brasileiro, advogado, inscrito na OAB/ES, sob o nº $oab";
-
+    $titulo="Dr.";
+    $descricao="brasileiro, advogado, inscrito na OAB/ES sob o nº $oab, matrícula nº $matricula";
 }
 
+$phpWord = new PhpWord();
+
+// Configuração de Margens (2,5 cm nas laterais)
+$sectionStyle = [
+    'marginLeft'   => Converter::cmToTwip(2.5),
+    'marginRight'  => Converter::cmToTwip(2.5),
+    'marginTop'    => Converter::cmToTwip(2),
+    'marginBottom' => Converter::cmToTwip(2),
+];
+$section = $phpWord->addSection($sectionStyle);
+
+// Cabeçalho com Logo
+if(file_exists('img/logoserra.png')){
+    $section->addImage('img/logoserra.png', [
+        'width' => 80,
+        'height' => 80,
+        'alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER
+    ]);
 }
 
-?>
+$section->addTextBreak(1);
 
-<!DOCTYPE html>
-<html>
+// Cabeçalho de Texto
+$fontStyleBold = ['name' => 'Arial', 'size' => 10, 'bold' => true];
+$paragraphStyleCenter = ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER, 'spaceAfter' => 0];
 
-<head>
+$section->addText('PREFEITURA MUNICIPAL DA SERRA', $fontStyleBold, $paragraphStyleCenter);
+$section->addText('ESTADO DO ESPÍRITO SANTO', $fontStyleBold, $paragraphStyleCenter);
+$section->addText('PROCURADORIA-GERAL DO MUNICÍPIO', $fontStyleBold, $paragraphStyleCenter);
 
-<meta charset="UTF-8">
-<title>Sistema de Portarias</title>
+$section->addTextBreak(1);
 
-<style>
+$section->addText("PORTARIA Nº $numero/$ano", ['name' => 'Arial', 'size' => 12, 'bold' => true], $paragraphStyleCenter);
 
-body{
-font-family:Arial;
-background:#f2f2f2;
-margin:40px;
-}
+$section->addTextBreak(1);
 
-.container{
-background:white;
-padding:30px;
-max-width:900px;
-margin:auto;
-border-radius:8px;
-}
+// Introdução
+$fontStyleNormal = ['name' => 'Arial', 'size' => 12];
+$paragraphStyleJustify = ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::BOTH, 'lineSpacing' => 1.5];
 
-input,select{
-width:100%;
-padding:8px;
-margin-bottom:10px;
-}
+$section->addText("A PROCURADORA-GERAL DO MUNICÍPIO DE SERRA, nomeada por força do Decreto nº. 027, de 02 de janeiro 2025, no uso de suas atribuições legais,", $fontStyleNormal, $paragraphStyleJustify);
 
-button{
-padding:10px 15px;
-margin-right:10px;
-}
+$section->addTextBreak(1);
+$section->addText("R    E    S    O    L    V    E:", ['name' => 'Arial', 'size' => 12, 'bold' => true], $paragraphStyleCenter);
+$section->addTextBreak(1);
 
-.portaria{
-margin-top:30px;
-white-space:pre-wrap;
-border:1px solid #ccc;
-padding:20px;
-}
+// Texto Principal com Negritos Específicos
+$textRun = $section->addTextRun($paragraphStyleJustify);
+$textRun->addText("Designar o Procurador Municipal, ", $fontStyleNormal);
+$textRun->addText("$titulo $procurador", ['name' => 'Arial', 'size' => 12, 'bold' => true]);
+$textRun->addText(", $descricao, para promover, acompanhar e praticar todos os atos necessários, decorrentes do processo sob o nº $processo, impetrado por ", $fontStyleNormal);
+$textRun->addText($autor, ['name' => 'Arial', 'size' => 12, 'bold' => true]);
+$textRun->addText(", em face do ", $fontStyleNormal);
+$textRun->addText("MUNICÍPIO DE SERRA", ['name' => 'Arial', 'size' => 12, 'bold' => true]);
+$textRun->addText(", perante $vara.", $fontStyleNormal);
 
-@media print{
+$section->addTextBreak(2);
+$section->addText("Serra/ES, $data.", $fontStyleNormal, $paragraphStyleCenter);
 
-form,button{
-display:none;
-}
+$section->addTextBreak(3);
 
-}
+// Assinatura
+$section->addText("ALESSANDRA COSTA FERREIRA NUNES", $fontStyleBold, $paragraphStyleCenter);
+$section->addText("Procuradora-Geral do Município de Serra", $fontStyleNormal, $paragraphStyleCenter);
 
-</style>
+// Saída do Arquivo
+$fileName = 'Portaria_'.str_replace('/', '_', $numero).'_'.$ano.'.docx';
+header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+header('Content-Disposition: attachment;filename="'.$fileName.'"');
+header('Cache-Control: max-age=0');
 
-</head>
-
-<body>
-
-<div class="container">
-
-<h2>Gerador de Portaria</h2>
-
-<form method="POST">
-
-<label>Nome do Procurador</label>
-<input name="procurador" required>
-
-<label>Gênero</label>
-<select name="genero">
-
-<option value="F">Feminino</option>
-<option value="M">Masculino</option>
-
-</select>
-
-<label>Número OAB</label>
-<input name="oab" required>
-
-<label>Número do Processo</label>
-<input name="processo" required>
-
-<label>Autor do Processo</label>
-<input name="autor" required>
-
-<label>Vara</label>
-<input name="vara" required>
-
-<button name="gerar">Gerar Portaria</button>
-
-</form>
-
-<?php
-
-if(isset($_POST['gerar'])){
-
-echo "<div class='portaria'>";
-
-echo "PREFEITURA MUNICIPAL DA SERRA\n";
-echo "ESTADO DO ESPÍRITO SANTO\n";
-echo "PROCURADORIA-GERAL\n\n";
-
-echo "PORTARIA Nº $numero/$ano\n\n";
-
-echo "A PROCURADORA-GERAL DO MUNICÍPIO DE SERRA, nomeada por força do Decreto nº 027, de 02 de janeiro de 2025, no uso de suas atribuições legais.\n\n";
-
-echo "R E S O L V E:\n\n";
-
-echo "Designar o Procurador Municipal $procurador, $genero_texto, para promover, acompanhar e praticar todos os atos necessários, decorrentes do processo sob o nº $processo, impetrado por $autor, em face do MUNICÍPIO DE SERRA, perante $vara.\n\n";
-
-echo "Serra/ES, $data.\n\n";
-
-echo "ALESSANDRA COSTA FERREIRA NUNES\n";
-echo "OAB/ES 11.483\n";
-echo "Procuradora-Geral do Município de Serra";
-
-echo "</div>";
-
-echo "<br>";
-
-echo "<button onclick='window.print()'>Gerar PDF</button>";
-
-echo "<a href='gerar_docx.php?numero=$numero&ano=$ano&procurador=$procurador&oab=$oab&genero=$genero&processo=$processo&autor=$autor&vara=$vara'>
-<button type='button'>Gerar Word</button>
-</a>";
-
-echo "<br><br>";
-
-echo "<a href='editar.php'>Editar Número da Portaria</a>";
-
-}
-
-?>
-
-</div>
-
-</body>
-
-</html>
+$objWriter = IOFactory::createWriter($phpWord, 'Word2007');
+$objWriter->save('php://output');
+exit;
