@@ -21,7 +21,6 @@ function dataExtenso($data){
     return "$d de $m de $a";
 }
 
-
 if(!isset($_GET['id'])){
     die("ID da portaria não fornecido.");
 }
@@ -39,6 +38,7 @@ $ano = $p['ano'];
 $procurador = $p['procurador'];
 $sexo = $p['sexo'];
 $oab = $p['oab'];
+$matricula = $p['matricula'] ?? 'N/A';
 $processo = $p['processo'];
 $autor = $p['autor'];
 $vara = $p['vara'];
@@ -46,10 +46,10 @@ $data = dataExtenso($p['data_portaria']);
 
 if($sexo=="F"){
     $titulo="Dra.";
-    $descricao="brasileira, advogada, inscrita na OAB/ES sob o nº $oab";
+    $descricao="brasileira, advogada, inscrita na OAB/ES sob o nº $oab, matrícula nº $matricula";
 }else{
     $titulo="Dr.";
-    $descricao="brasileiro, advogado, inscrito na OAB/ES sob o nº $oab";
+    $descricao="brasileiro, advogado, inscrito na OAB/ES sob o nº $oab, matrícula nº $matricula";
 }
 
 class PDF extends FPDF{
