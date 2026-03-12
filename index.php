@@ -1,5 +1,7 @@
 <?php
+include 'backup_auto.php';
 $db = new SQLite3('data/portarias.db');
+$db->exec('PRAGMA journal_mode = WAL;');
 
 // --- LÓGICA DE API PARA PREENCHIMENTO AUTOMÁTICO ---
 if(isset($_GET['buscar_dados'])){
