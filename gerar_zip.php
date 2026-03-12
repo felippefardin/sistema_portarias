@@ -67,7 +67,7 @@ foreach ($_POST['selecionados'] as $id) {
     $pdf->SetFont('Arial', '', 12);
     $pdf->Cell(0, 8, utf8_decode("Procuradora-Geral do Município de Serra"), 0, 1, 'C');
 
-    $pdfContent = $pdf->Output('S'); // Gera o PDF como string
+    $pdfContent = $pdf->Output('S'); 
     $zip->addFromString("Portaria_{$p['numero']}_{$p['ano']}.pdf", $pdfContent);
 }
 
@@ -78,5 +78,5 @@ header('Content-Type: application/zip');
 header('Content-disposition: attachment; filename='.$zipName);
 header('Content-Length: ' . filesize($zipName));
 readfile($zipName);
-unlink($zipName); // Deleta o arquivo temporário do servidor
+unlink($zipName); 
 exit;

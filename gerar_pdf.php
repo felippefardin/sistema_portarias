@@ -67,6 +67,8 @@ class PDF extends FPDF{
 ob_end_clean();
 
 $pdf = new PDF();
+// Ajuste de margens laterais (Esquerda: 25mm, Direita: 25mm)
+$pdf->SetMargins(25, 10, 25); 
 $pdf->AddPage();
 
 // Cabeçalho do PDF
@@ -94,14 +96,26 @@ $pdf->Cell(0,10,utf8_decode("R    E    S    O    L    V    E:"),0,1,'C');
 
 $pdf->Ln(10);
 
+// Texto com partes em negrito
 $pdf->SetFont('Arial','',12);
-$texto="Designar o Procurador Municipal, $titulo $procurador, $descricao, para promover, acompanhar e praticar todos os atos necessários, decorrentes do processo sob o nº $processo, impetrado por $autor, em face do MUNICÍPIO DE SERRA, perante $vara.";
-$pdf->MultiCell(0,8,utf8_decode($texto));
+$pdf->Write(8, utf8_decode("Designar o Procurador Municipal, "));
+$pdf->SetFont('Arial','B',12); // Negrito para o Procurador
+$pdf->Write(8, utf8_decode("$titulo $procurador"));
+$pdf->SetFont('Arial','',12);
+$pdf->Write(8, utf8_decode(", $descricao, para promover, acompanhar e praticar todos os atos necessários, decorrentes do processo sob o nº $processo, impetrado por "));
+$pdf->SetFont('Arial','B',12); // Negrito para o Autor
+$pdf->Write(8, utf8_decode($autor));
+$pdf->SetFont('Arial','',12);
+$pdf->Write(8, utf8_decode(", em face do "));
+$pdf->SetFont('Arial','B',12); // Negrito para Município de Serra
+$pdf->Write(8, utf8_decode("MUNICÍPIO DE SERRA"));
+$pdf->SetFont('Arial','',12);
+$pdf->Write(8, utf8_decode(", perante $vara."));
 
-$pdf->Ln(15);
+$pdf->Ln(20);
 $pdf->Cell(0, 10, utf8_decode("Serra/ES, $data."), 0, 1, 'C'); 
 
-$pdf->Ln(40); 
+$pdf->Ln(35); 
 
 $pdf->SetFont('Arial', 'B', 12);
 $pdf->Cell(0, 8, utf8_decode("ALESSANDRA COSTA FERREIRA NUNES"), 0, 1, 'C');
