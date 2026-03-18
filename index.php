@@ -10,10 +10,10 @@ if(isset($_GET['buscar_dados'])){
     $dados = [];
     
     if($tipo == 'procurador'){
-        $res = $db->query("SELECT oab, sexo, matricula FROM cadastro_procuradores WHERE nome = '$valor' LIMIT 1");
-        $dados = $res->fetchArray(SQLITE3_ASSOC);
-    } elseif($tipo == 'processo'){
-        $res = $db->query("SELECT autor, vara FROM portarias WHERE processo = '$valor' ORDER BY id DESC LIMIT 1");
+        // Busca os dados baseados no nome exato cadastrado
+        $stmt = $db->prepare("SELECT oab, sexo, matricula FROM cadastro_procuradores WHERE nome = :nome LIMIT 1");
+        $stmt->bindValue(':nome', $valor, SQLITE3_TEXT);
+        $res = $stmt->execute();
         $dados = $res->fetchArray(SQLITE3_ASSOC);
     }
     
@@ -273,14 +273,12 @@ function autoPreencher(tipo, valor) {
     fetch(`index.php?buscar_dados=1&tipo=${tipo}&valor=${encodeURIComponent(valor)}`)
         .then(response => response.json())
         .then(data => {
-            if(Object.keys(data).length > 0) {
+            if(data && Object.keys(data).length > 0) {
                 if(tipo === 'procurador') {
+                    // O valor vindo do banco (M/F) deve coincidir com o <option value="M"> ou "F"
                     document.getElementById('oab_input').value = data.oab || '';
                     document.getElementById('sexo_input').value = data.sexo || 'M';
                     document.getElementById('matricula_input').value = data.matricula || '';
-                } else if(tipo === 'processo') {
-                    document.getElementById('autor_input').value = data.autor || '';
-                    document.getElementById('vara_input').value = data.vara || '';
                 }
             }
         });
