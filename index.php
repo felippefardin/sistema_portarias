@@ -129,7 +129,11 @@ td{ padding:10px 12px; border-bottom:1px solid rgba(0,0,0,0.03); font-size: 0.9e
 .btn-cadastro, .btn-tutorial{ color:white !important; padding:8px 15px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:0.85em; display: flex; align-items: center; gap: 5px; }
 .btn-cadastro{ background:#3498db; }
 .btn-tutorial{ background: var(--accent-color); }
-.dark-toggle { cursor: pointer; background: var(--primary-color); color: white; border: none; padding: 8px 15px; border-radius: 50px; font-size: 13px; display: flex; align-items: center; gap: 5px; font-weight: 600; }
+
+/* ESTILO PADRONIZADO DO BOTÃO DARK MODE */
+.dark-toggle { cursor: pointer; background: var(--primary-color); color: white; border: none; padding: 10px 18px; border-radius: 50px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.4s; font-weight: 600; }
+body.dark-mode .dark-toggle { background: #f1c40f; color: #2c3e50; }
+
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 2000; }
 .modal.show { display: flex; }
 .modal-content { background: var(--bg-card); padding: 30px; border-radius: 15px; text-align: center; width: 90%; max-width: 350px; }
@@ -311,20 +315,22 @@ function baixarZIP() {
 
 function marcarTodos(s){ document.querySelectorAll('input[name="selecionados[]"]').forEach(c=>c.checked=s.checked); }
 
-function toggleDarkMode(){
-    document.body.classList.toggle("dark-mode");
+/* LÓGICA DE DARK MODE PADRONIZADA */
+function updateDarkModeUI() {
     const isDark = document.body.classList.contains("dark-mode");
-    localStorage.setItem("darkmode", isDark);
     document.getElementById("dark-icon").innerText = isDark ? "☀️" : "🌙";
     document.getElementById("dark-text").innerText = isDark ? "Modo Claro" : "Modo Escuro";
 }
 
+function toggleDarkMode(){
+    document.body.classList.toggle("dark-mode");
+    localStorage.setItem("darkmode", document.body.classList.contains("dark-mode"));
+    updateDarkModeUI();
+}
+
 window.onload = () => { 
-    if(localStorage.getItem("darkmode")==="true") {
-        document.body.classList.add("dark-mode");
-        document.getElementById("dark-icon").innerText = "☀️";
-        document.getElementById("dark-text").innerText = "Modo Claro";
-    }
+    if(localStorage.getItem("darkmode") === "true") document.body.classList.add("dark-mode");
+    updateDarkModeUI();
 };
 </script>
 </body>

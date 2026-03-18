@@ -25,7 +25,7 @@ if (file_exists($origem)) {
             echo "<b>Erro:</b> Falha ao copiar o arquivo. Verifique permissões na unidade S:<br>";
         }
     } else {
-        echo "<b>Aviso:</b> O backup de hoje já existe.<br>";
+      //  echo "<b>Aviso:</b> O backup de hoje já existe.<br>";
     }
 } else {
     return;
