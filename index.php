@@ -1,27 +1,31 @@
 <?php
-include 'backup_auto.php';
+if (!isset($_GET['buscar_dados'])) {
+    include 'backup_auto.php';
+}
 $db = new SQLite3('data/portarias.db');
 $db->exec('PRAGMA journal_mode = WAL;');
 
 // --- LÓGICA DE API PARA PREENCHIMENTO AUTOMÁTICO ---
 if(isset($_GET['buscar_dados'])){
-    $tipo = $_GET['tipo'];
-    $valor = $_GET['valor'];
+  $tipo = $_GET['tipo'] ?? '';
+$valor = isset($_GET['valor']) ? trim($_GET['valor']) : '';
     $dados = [];
     
-    if($tipo == 'procurador'){
-        // Busca os dados baseados no nome exato cadastrado
-        $stmt = $db->prepare("SELECT oab, sexo, matricula FROM cadastro_procuradores WHERE nome = :nome LIMIT 1");
-        $stmt->bindValue(':nome', $valor, SQLITE3_TEXT);
+    if($tipo == 'procurador' && !empty($valor)){
+        // COLLATE NOCASE permite que encontre o nome mesmo se digitar maiúsculo/minúsculo diferente do cadastro
+        $stmt = $db->prepare("SELECT oab, sexo, matricula FROM cadastro_procuradores WHERE nome LIKE :valor COLLATE NOCASE LIMIT 1");
+        $stmt->bindValue(':valor', '%'.$valor.'%', SQLITE3_TEXT);
         $res = $stmt->execute();
         $dados = $res->fetchArray(SQLITE3_ASSOC);
     }
     
-    header('Content-Type: application/json');
-    echo json_encode($dados ?: []);
-    exit;
+   header('Content-Type: application/json');
+ob_clean();
+echo json_encode($dados ?: []);
+exit;
 }
 
+// Inicialização de Tabelas
 $db->exec("CREATE TABLE IF NOT EXISTS portarias(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     numero INTEGER,
@@ -46,6 +50,7 @@ $db->exec("CREATE TABLE IF NOT EXISTS cadastro_procuradores(
     status TEXT DEFAULT 'Ativo'
 )");
 
+// Verificação de coluna matrícula
 $checkColumn = $db->query("PRAGMA table_info(portarias)");
 $hasMatricula = false;
 while($col = $checkColumn->fetchArray()) {
@@ -53,6 +58,7 @@ while($col = $checkColumn->fetchArray()) {
 }
 if(!$hasMatricula) $db->exec("ALTER TABLE portarias ADD COLUMN matricula TEXT");
 
+// Lógica de Salvar
 if(isset($_POST['salvar'])){
     $anoAtual = date("Y");
     $resUltimo = $db->query("SELECT numero, ano FROM portarias ORDER BY id DESC LIMIT 1");
@@ -74,7 +80,6 @@ if(isset($_POST['salvar'])){
     $stmt->bindValue(':data', $_POST['data'], SQLITE3_TEXT);
     $stmt->execute();
 
-    // Redireciona passando o ID para acionar o download automático
     header("Location: index.php?msg=editado&download_id=" . $db->lastInsertRowID());
     exit;
 }
@@ -103,46 +108,33 @@ $lista_processos = $db->query("SELECT DISTINCT processo FROM portarias ORDER BY 
 <style>
 :root{--primary-color:#2c3e50;--secondary-color:#4CAF50;--accent-color:#ff5722;--bg-body:#f0f2f5;--bg-card:#ffffff;--text-main:#333;--border-radius:12px;--shadow:0 8px 30px rgba(0,0,0,0.05);}
 body.dark-mode{--bg-body:#121212;--bg-card:#1e1e1e;--text-main:#f5f5f5;--primary-color:#ffffff;--shadow:0 8px 30px rgba(0,0,0,0.4);}
-
 body{font-family:'Segoe UI',Roboto,sans-serif;background:var(--bg-body);margin:0;color:var(--text-main);transition:0.3s; overflow: hidden;}
-
 .container{display:grid;grid-template-columns:380px 1fr; grid-template-rows: auto 1fr; gap:20px; padding:20px; height: 100vh; box-sizing:border-box;}
 .header-actions{grid-column:1 / -1;display:flex;justify-content:space-between;align-items:center;background:var(--bg-card);padding:10px 25px;border-radius:var(--border-radius);box-shadow:var(--shadow);}
-
 .sidebar{ background:var(--bg-card); padding:20px; border-radius:var(--border-radius); box-shadow:var(--shadow); overflow-y: auto; height: 100%;}
 .main-content{ background:var(--bg-card); padding:20px; border-radius:var(--border-radius); box-shadow:var(--shadow); overflow-y: auto; height: 100%; }
-
 h2{ color:var(--primary-color); margin: 0 0 15px 0; font-size: 1.3rem; border-left: 5px solid var(--secondary-color); padding-left: 12px; }
 form label{ display:block; font-weight:600; margin:8px 0 3px 0; font-size:0.8em; color:#666; }
 body.dark-mode form label { color: #aaa; }
 form input, form select{ width:100%; padding:10px; margin-bottom:5px; border-radius:6px; border:1px solid #ddd; box-sizing:border-box; background: var(--bg-card); color: var(--text-main); font-size: 13px; }
-
 .procurador-box { background: rgba(0,0,0,0.02); border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
 body.dark-mode .procurador-box { background: rgba(255,255,255,0.03); border-color: #333; }
 .procurador-box h3 { margin: 0 0 10px 0; font-size: 0.9em; text-transform: uppercase; color: var(--secondary-color); }
-
 .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; }
 .filter-bar input{ flex: 1; }
 .filter-bar button { padding: 10px 20px; background: #2c3e50; color: white !important; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-body.dark-mode .filter-bar button { background: #4a69bd; }
-
 table{ width:100%; border-collapse:collapse; }
 th{ background:rgba(0,0,0,0.02); padding:12px; text-align:left; border-bottom:2px solid #eee; font-size: 0.85em; }
 td{ padding:10px 12px; border-bottom:1px solid rgba(0,0,0,0.03); font-size: 0.9em; }
-
 .btn-cadastro, .btn-tutorial{ color:white !important; padding:8px 15px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:0.85em; display: flex; align-items: center; gap: 5px; }
 .btn-cadastro{ background:#3498db; }
 .btn-tutorial{ background: var(--accent-color); }
-
 .dark-toggle { cursor: pointer; background: var(--primary-color); color: white; border: none; padding: 8px 15px; border-radius: 50px; font-size: 13px; display: flex; align-items: center; gap: 5px; font-weight: 600; }
-body.dark-mode .dark-toggle { background: #f1c40f; color: #2c3e50; }
-
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 2000; }
 .modal.show { display: flex; }
 .modal-content { background: var(--bg-card); padding: 30px; border-radius: 15px; text-align: center; width: 90%; max-width: 350px; }
 .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
 .modal-buttons button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
-
 .action-bar { margin-top: 20px; display: flex; gap: 10px; }
 .table-btn { padding: 6px 12px; border-radius: 4px; border: 1px solid #ddd; background: white; cursor: pointer; font-size: 0.8em; color: #333; }
 </style>
@@ -156,7 +148,6 @@ body.dark-mode .dark-toggle { background: #f1c40f; color: #2c3e50; }
 window.addEventListener("load", function(){
     const id = "<?php echo intval($_GET['download_id']); ?>";
     window.open('gerar_pdf.php?id=' + id + '&download=1', '_blank');
-    // Limpa a URL para não baixar novamente ao atualizar a página
     const novaUrl = window.location.pathname + window.location.search.replace(/&download_id=\d+/, "");
     window.history.replaceState({}, document.title, novaUrl);
 });
@@ -185,12 +176,17 @@ window.addEventListener("load", function(){
             <h3>Dados do Procurador</h3>
             <label>Procurador(a)</label>
             <input type="text" name="procurador" id="proc_input" list="datalist_procurador" required onchange="autoPreencher('procurador', this.value)">
-            <datalist id="datalist_procurador"><?php while($row = $lista_procuradores->fetchArray()) echo "<option value='".htmlspecialchars($row['procurador'])."'>"; ?></datalist>
+            <datalist id="datalist_procurador">
+                <?php while($row = $lista_procuradores->fetchArray()) echo "<option value='".htmlspecialchars($row['procurador'])."'>"; ?>
+            </datalist>
             
             <div style="display: flex; gap: 10px;">
                 <div style="flex: 1;">
                     <label>Sexo</label>
-                    <select name="sexo" id="sexo_input" required><option value="M">M</option><option value="F">F</option></select>
+                    <select name="sexo" id="sexo_input" required>
+                        <option value="M">M</option>
+                        <option value="F">F</option>
+                    </select>
                 </div>
                 <div style="flex: 2;">
                     <label>OAB</label>
@@ -202,14 +198,17 @@ window.addEventListener("load", function(){
         </div>
 
         <label>Processo</label>
-        <input type="text" name="processo" id="processo_input" list="datalist_processo" required onchange="autoPreencher('processo', this.value)">
-        <datalist id="datalist_processo"><?php while($row = $lista_processos->fetchArray()) echo "<option value='".htmlspecialchars($row['processo'])."'>"; ?></datalist>
+        <input type="text" name="processo" id="processo_input" required>
+        
         <label>Autor</label>
         <input type="text" name="autor" id="autor_input" required>
+        
         <label>Vara</label>
         <input type="text" name="vara" id="vara_input" required>
+        
         <label>Data</label>
         <input type="date" name="data" required>
+        
         <button type="submit" name="salvar" style="background:var(--secondary-color); color:white; font-weight:bold; width:100%; border:none; border-radius:8px; padding:12px; margin-top:10px; cursor:pointer;">Gerar e Salvar</button>
     </form>
 </aside>
@@ -228,20 +227,18 @@ window.addEventListener("load", function(){
                 <?php
                 $res=$db->query("SELECT * FROM portarias $filtro ORDER BY id DESC");
                 while($row=$res->fetchArray()){
-    echo "<tr>
-        <td><input type='checkbox' name='selecionados[]' value='".$row['id']."'></td>
-        <td><strong>".$row['numero']."/".$row['ano']."</strong></td>
-        <td>".$row['procurador']."</td>
-        <td><small>".$row['processo']."</small></td>
-        <td>
-            <button type='button' class='table-btn' onclick=\"window.open('gerar_pdf.php?id=".$row['id']."','_blank')\">Ver</button>
-            
-            <button type='button' class='table-btn' style='background:#3498db; color:white; border:none;' onclick=\"location.href='gerar_docx.php?id=".$row['id']."'\">WORD</button>
-            
-            <button type='button' class='table-btn' style='color:#e74c3c' onclick='abrirModal(".$row['id'].")'>Apagar</button>
-        </td>
-    </tr>";
-}
+                    echo "<tr>
+                        <td><input type='checkbox' name='selecionados[]' value='".$row['id']."'></td>
+                        <td><strong>".$row['numero']."/".$row['ano']."</strong></td>
+                        <td>".$row['procurador']."</td>
+                        <td><small>".$row['processo']."</small></td>
+                        <td>
+                            <button type='button' class='table-btn' onclick=\"window.open('gerar_pdf.php?id=".$row['id']."','_blank')\">Ver</button>
+                            <button type='button' class='table-btn' style='background:#3498db; color:white; border:none;' onclick=\"location.href='gerar_docx.php?id=".$row['id']."'\">WORD</button>
+                            <button type='button' class='table-btn' style='color:#e74c3c' onclick='abrirModal(".$row['id'].")'>Apagar</button>
+                        </td>
+                    </tr>";
+                }
                 ?>
             </tbody>
         </table>
@@ -269,25 +266,27 @@ window.addEventListener("load", function(){
 let idExcluir = null, multiplo = false;
 
 function autoPreencher(tipo, valor) {
-    if(!valor) return;
+    if (!valor || valor.trim() === "") return;
+
     fetch(`index.php?buscar_dados=1&tipo=${tipo}&valor=${encodeURIComponent(valor)}`)
         .then(response => response.json())
         .then(data => {
-            if(data && Object.keys(data).length > 0) {
-                if(tipo === 'procurador') {
-                    // O valor vindo do banco (M/F) deve coincidir com o <option value="M"> ou "F"
+            if (data && Object.keys(data).length > 0) {
+                if (tipo === 'procurador') {
                     document.getElementById('oab_input').value = data.oab || '';
-                    document.getElementById('sexo_input').value = data.sexo || 'M';
                     document.getElementById('matricula_input').value = data.matricula || '';
+                    if (data.sexo === 'M' || data.sexo === 'F') {
+                        document.getElementById('sexo_input').value = data.sexo;
+                    }
                 }
             }
-        });
+        })
+        .catch(err => console.error("Erro ao buscar dados:", err));
 }
 
 function abrirModal(id) { 
     idExcluir = id; multiplo = false;
     document.getElementById("modalExcluir").style.display = "flex";
-    document.getElementById("modalExcluir").classList.add("show");
 }
 
 function abrirModalMultiplo() {
@@ -312,27 +311,21 @@ function baixarZIP() {
 
 function marcarTodos(s){ document.querySelectorAll('input[name="selecionados[]"]').forEach(c=>c.checked=s.checked); }
 
-function updateDarkModeUI() {
+function toggleDarkMode(){
+    document.body.classList.toggle("dark-mode");
     const isDark = document.body.classList.contains("dark-mode");
+    localStorage.setItem("darkmode", isDark);
     document.getElementById("dark-icon").innerText = isDark ? "☀️" : "🌙";
     document.getElementById("dark-text").innerText = isDark ? "Modo Claro" : "Modo Escuro";
 }
 
-function toggleDarkMode(){
-    document.body.classList.toggle("dark-mode");
-    localStorage.setItem("darkmode", document.body.classList.contains("dark-mode"));
-    updateDarkModeUI();
-}
-
 window.onload = () => { 
-    if(localStorage.getItem("darkmode")==="true") document.body.classList.add("dark-mode");
-    updateDarkModeUI();
+    if(localStorage.getItem("darkmode")==="true") {
+        document.body.classList.add("dark-mode");
+        document.getElementById("dark-icon").innerText = "☀️";
+        document.getElementById("dark-text").innerText = "Modo Claro";
+    }
 };
-
-if (window.location.search.includes('msg=')) {
-    const novaUrl = window.location.pathname;
-    window.history.replaceState({}, document.title, novaUrl);
-}
 </script>
 </body>
 </html>

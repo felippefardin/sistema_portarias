@@ -28,6 +28,6 @@ if (file_exists($origem)) {
         echo "<b>Aviso:</b> O backup de hoje já existe.<br>";
     }
 } else {
-    echo "<b>Erro:</b> Arquivo original não encontrado em: $origem<br>";
+    return;
 }
 ?>
