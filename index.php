@@ -36,6 +36,16 @@ $db->exec("CREATE TABLE IF NOT EXISTS portarias(
     data_portaria TEXT
 )");
 
+$db->exec("CREATE TABLE IF NOT EXISTS cadastro_procuradores(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    oab TEXT,
+    sexo TEXT,
+    matricula TEXT,
+    email TEXT,
+    status TEXT DEFAULT 'Ativo'
+)");
+
 $checkColumn = $db->query("PRAGMA table_info(portarias)");
 $hasMatricula = false;
 while($col = $checkColumn->fetchArray()) {
